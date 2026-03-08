@@ -4,3 +4,11 @@
 html{
   @apply bg-[#18181F] text-white;
 }
+
+body {
+  @apply m-0 h-screen overflow-hidden bg-[#18181F] text-white;
+}
+
+#app {
+  @apply h-screen overflow-hidden;
+}
