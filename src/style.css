@@ -1,0 +1,6 @@
+@import "tailwindcss";
+
+
+html{
+  @apply bg-[#18181F] text-white;
+}
