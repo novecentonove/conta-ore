@@ -24,7 +24,6 @@ CREATE TABLE timesheets (
   project_id INTEGER,
   time_from TEXT NOT NULL,
   time_to TEXT,
-  duration_minutes INTEGER,
   note TEXT,
   created_at TEXT,
   FOREIGN KEY (project_id) REFERENCES projects(id)

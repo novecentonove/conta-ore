@@ -17,7 +17,6 @@ export type TimesheetEntry = {
   project_id: number | null
   time_from: string
   time_to: string | null
-  duration_minutes: number | null
   note: string | null
   created_at: string | null
 }
@@ -61,7 +60,7 @@ export async function listTimesheetsBetween(start: string, end: string) {
   const db = await getActiveDatabase()
 
   return db.select<TimesheetEntry[]>(
-    `SELECT id, project_id, time_from, time_to, duration_minutes, note, created_at
+    `SELECT id, project_id, time_from, time_to, note, created_at
      FROM timesheets
      WHERE time_from >= $1 AND time_from < $2
      ORDER BY time_from ASC`,
@@ -72,7 +71,6 @@ export async function listTimesheetsBetween(start: string, end: string) {
 export async function createTimesheet(input: {
   time_from: string
   time_to?: string | null
-  duration_minutes?: number | null
   note?: string | null
   project_id?: number | null
   created_at?: string | null
@@ -81,19 +79,44 @@ export async function createTimesheet(input: {
   const createdAt = input.created_at ?? new Date().toISOString()
 
   const result = await db.execute(
-    `INSERT INTO timesheets (project_id, time_from, time_to, duration_minutes, note, created_at)
-     VALUES ($1, $2, $3, $4, $5, $6)`,
+    `INSERT INTO timesheets (project_id, time_from, time_to, note, created_at)
+     VALUES ($1, $2, $3, $4, $5)`,
     [
       input.project_id ?? null,
       input.time_from,
       input.time_to ?? null,
-      input.duration_minutes ?? null,
       input.note ?? null,
       createdAt,
     ],
   )
 
   return result.lastInsertId ?? null
+}
+
+export async function updateTimesheet(input: {
+  id: number
+  time_from: string
+  time_to?: string | null
+  note?: string | null
+  project_id?: number | null
+}) {
+  const db = await getActiveDatabase()
+
+  await db.execute(
+    `UPDATE timesheets
+     SET project_id = $1,
+         time_from = $2,
+         time_to = $3,
+         note = $4
+     WHERE id = $5`,
+    [
+      input.project_id ?? null,
+      input.time_from,
+      input.time_to ?? null,
+      input.note ?? null,
+      input.id,
+    ],
+  )
 }
 
 export async function getSQLiteStorageDir() {
