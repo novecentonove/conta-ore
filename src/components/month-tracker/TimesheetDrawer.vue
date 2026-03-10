@@ -20,30 +20,32 @@
       <DrawerHeader>
       </DrawerHeader>
 
-      <div class="px-4 pb-4 text-sm text-white/70">
-        <div class="flex flex-wrap items-end gap-3">
-          <div class="grid gap-2">
-            <label class="text-xs font-semibold uppercase tracking-[0.2em] text-white/45">
-              Inizio
-            </label>
-            <input
-              v-model="startTime"
-              type="time"
-              class="h-9 rounded-md border border-white/10 bg-[#262633] px-3 text-sm text-white/90 outline-none focus:border-white/20 disabled:opacity-60"
-              :disabled="isSaving || !hasActiveDatabase"
-            >
-          </div>
+      <div class="pb-4 text-sm text-white/70">
+        <div class="flex flex-col gap-4">
 
-          <div class="grid gap-2">
-            <label class="text-xs font-semibold uppercase tracking-[0.2em] text-white/45">
-              Fine
-            </label>
-            <input
-              v-model="endTime"
-              type="time"
-              class="h-9 rounded-md border border-white/10 bg-[#262633] px-3 text-sm text-white/90 outline-none focus:border-white/20 disabled:opacity-60"
-              :disabled="isSaving || !hasActiveDatabase"
-            >
+          <div class="flex gap-6">
+            <div class="grid gap-2">
+              <label class="text-xs font-semibold uppercase tracking-[0.2em] text-white/45">
+                Inizio
+              </label>
+              <input
+                v-model="startTime"
+                type="time"
+                class="h-9 rounded-md border border-white/10 bg-[#262633] px-3 text-sm text-white/90 outline-none focus:border-white/20 disabled:opacity-60"
+                :disabled="isSaving || !hasActiveDatabase"
+              >
+            </div>
+            <div class="grid gap-2">
+              <label class="text-xs font-semibold uppercase tracking-[0.2em] text-white/45">
+                Fine
+              </label>
+              <input
+                v-model="endTime"
+                type="time"
+                class="h-9 rounded-md border border-white/10 bg-[#262633] px-3 text-sm text-white/90 outline-none focus:border-white/20 disabled:opacity-60"
+                :disabled="isSaving || !hasActiveDatabase"
+              >
+            </div>
           </div>
 
           <div class="grid gap-2 min-w-55 flex-1">
@@ -69,7 +71,7 @@
 
       <DrawerFooter class="flex-row items-center justify-end">
         <Button :disabled="!canSave || isSaving" @click="handleSave">
-          {{ isSaving ? 'Salvataggio...' : 'Salva' }}
+          {{ isSaving ? 'Salvataggio...' : submitLabel }}
         </Button>
 
       </DrawerFooter>
@@ -129,6 +131,9 @@ const saveError = ref('')
 
 const drawerTitle = computed(() => (
   props.existingEntry ? 'Modifica traccia' : 'Crea traccia'
+))
+const submitLabel = computed(() => (
+  props.existingEntry ? 'Aggiorna' : 'Salva'
 ))
 
 const selectedSlotLabel = computed(() => {
