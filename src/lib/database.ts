@@ -3,6 +3,8 @@ import { ref } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
 import Database from '@tauri-apps/plugin-sql'
 
+import initialMigration from '@/migrations/001_init.sql?raw'
+
 const ACTIVE_DATABASE_KEY = 'conta-ore.active-database'
 const SQLITE_FILE_PATTERN = /^[A-Za-z0-9._-]+$/
 
@@ -16,14 +18,16 @@ export function getConnectionString(databaseName: string) {
 
 export async function createDatabase(databaseName: string) {
   const normalizedName = normalizeDatabaseName(databaseName)
-  await Database.load(getConnectionString(normalizedName))
+  const db = await loadDatabase(normalizedName)
+  await applyInitialMigration(db)
   setActiveDatabaseName(normalizedName)
   return normalizedName
 }
 
 export async function createDatabaseAtPath(databasePath: string) {
   const normalizedPath = normalizeDatabasePath(databasePath)
-  await Database.load(getConnectionString(normalizedPath))
+  const db = await loadDatabase(normalizedPath)
+  await applyInitialMigration(db)
   setActiveDatabaseName(normalizedPath)
   return normalizedPath
 }
@@ -37,7 +41,7 @@ export async function importDatabase(file: File) {
     bytes,
   })
 
-  await Database.load(getConnectionString(savedName))
+  await loadDatabase(savedName)
   setActiveDatabaseName(savedName)
 
   return savedName
@@ -55,6 +59,31 @@ export function clearActiveDatabase() {
 function setActiveDatabaseName(databaseName: string) {
   activeDatabaseName.value = databaseName
   localStorage.setItem(ACTIVE_DATABASE_KEY, databaseName)
+}
+
+async function loadDatabase(databaseName: string) {
+  const db = await Database.load(getConnectionString(databaseName))
+  await db.execute('PRAGMA foreign_keys = ON')
+  return db
+}
+
+async function applyInitialMigration(db: Database) {
+  const hasCustomersTable = await db.select<{ name: string }[]>(
+    "SELECT name FROM sqlite_master WHERE type='table' AND name='customers'"
+  )
+
+  if (hasCustomersTable.length > 0) {
+    return
+  }
+
+  const statements = initialMigration
+    .split(';')
+    .map((statement) => statement.trim())
+    .filter(Boolean)
+
+  for (const statement of statements) {
+    await db.execute(statement)
+  }
 }
 
 function readStoredDatabaseName() {

@@ -1,89 +1,102 @@
 <template>
-  <section class="flex h-full flex-col gap-6 px-6 pb-6 pt-4">
-    <header class="flex items-center justify-between gap-4">
-      <div>
-        <h1 class="mt-2 text-3xl font-semibold tracking-tight text-white">
-          {{ monthLabel }}
-        </h1>
-      </div>
+  <InnerPage>
+    <section class="flex min-h-0 flex-1 flex-col gap-6">
 
-      <div class="flex items-center gap-2">
-        <button
-          type="button"
-          class="flex h-11 w-11 items-center justify-center rounded border border-white/10 bg-white/5 text-xl text-white transition hover:border-white/20 hover:bg-white/10"
-          @click="goToPreviousMonth"
-        >
-          &lt;
-        </button>
-
-        <button
-          type="button"
-          class="flex h-11 w-11 items-center justify-center rounded border border-white/10 bg-white/5 text-xl text-white transition hover:border-white/20 hover:bg-white/10"
-          @click="goToNextMonth"
-        >
-          &gt;
-        </button>
-      </div>
-    </header>
-
-    <div class="flex-1 overflow-auto rounded border border-white/10 bg-white/[0.03] p-3 shadow-[0_24px_80px_rgba(0,0,0,0.28)]">
-      <div
-        class="grid min-w-[1000px] gap-px overflow-hidden rounded bg-white/8"
-        :style="gridTemplateColumns"
-      >
-        <div
-          class="sticky left-0 top-0 z-30 flex items-end bg-[#18181F] px-4 pb-3 text-xs font-semibold uppercase tracking-[0.2em] text-white/35"
-          :style="cornerHeaderStyle"
-        />
-
-        <div
-          v-for="hour in hours"
-          :key="`hour-${hour}`"
-          class="sticky top-0 z-20 flex items-end bg-[#18181F] px-1 pb-1 text-left"
-          :style="columnHeaderStyle"
-        >
-          <span class="mt-2 text-sm font-semibold leading-none text-white">
-            {{ formatHour(hour) }}
-          </span>
+      <header class="ml-4 space-y-4">
+        <div>
+          <h1 class="mt-2 font-semibold text-white">
+            {{ monthLabel }}
+          </h1>
         </div>
 
-        <template v-for="day in daysInMonth" :key="`row-${day.iso}`">
-          <div
-            class="sticky left-0 z-10 flex flex-row justify-center gap-2 bg-[#18181F] px-4 py-0 text-left"
-            :style="rowHeaderStyle"
+        <!-- goToPreviousMonth -->
+        <div class="flex items-center gap-2">
+          <button
+            type="button"
+            class="flex h-5 w-5 items-center justify-center rounded border border-white/10 bg-white/5 text-xl text-white transition hover:border-white/20 hover:bg-white/10"
+            @click="goToPreviousMonth"
           >
-            <span class="text-xl font-semibold text-white">
-              {{ day.dayNumber }}
-            </span>
-            <span class="mt-2 text-xs font-semibold uppercase text-white/45">
-              {{ day.weekdayLabel }}
+            <ChevronLeft />
+          </button>
+
+          <!-- goToNextMonth -->
+          <button
+            type="button"
+            class="flex h-5 w-5 items-center justify-center rounded border border-white/10 bg-white/5 text-xl text-white transition hover:border-white/20 hover:bg-white/10"
+            @click="goToNextMonth"
+          >
+            <ChevronRight />
+          </button>
+        </div>
+      </header>
+
+      <div class="flex-1 min-h-0 min-w-0 overflow-scroll">
+        <div
+          class="grid w-max gap-px rounded"
+          :style="gridTemplateColumns"
+        >
+          <div
+            class="left-0 top-0 z-30 flex items-end px-4 pb-3 text-xs font-semibold uppercase text-white/35"
+            :style="cornerHeaderStyle"
+          />
+
+          <!--  Columns: Ore  -->
+          <div
+            v-for="hour in hours"
+            :key="`hour-${hour}`"
+            class="top-0 z-20 flex items-end px-1 pb-1 text-left"
+            :style="columnHeaderStyle"
+          >
+            <span class="mt-2 text-xs font-semibold leading-none text-white">
+              {{ formatHour(hour) }}
             </span>
           </div>
 
-          <button
-            v-for="hour in hours"
-            :key="`${day.iso}-${hour}`"
-            type="button"
-            class="bg-[#20202A] px-3 py-3 text-left transition hover:bg-[#2A2A38] focus:outline-none focus:ring-2 focus:ring-white/20"
-            :style="cellStyle"
-          >
-            <span class="sr-only">
-              Registra ore per il {{ day.dayNumber }} {{ day.weekdayLabel }} alle {{ formatHour(hour) }}
-            </span>
-          </button>
-        </template>
+          <!--  Columns: Giorni  -->
+          <template v-for="day in daysInMonth" :key="`row-${day.iso}`">
+          <div :style="rowHeaderStyle" class="flex justify-center items-center">
+
+            <div>
+              <div class="px-4 flex items-center space-x-3">
+                <span class="text-right w-6 text-sm font-semibold text-white tabular-nums">
+                  {{ day.dayNumber }}
+                </span>
+
+                <span class="w-12 text-left text-xs font-semibold uppercase text-white/45">
+                  {{ day.weekdayLabel }}
+                </span>
+
+              </div>
+            </div>
+          </div>
+
+            <button
+              v-for="hour in hours"
+              :key="`${day.iso}-${hour}`"
+              type="button"
+              class="bg-[#20202A] px-3 py-1 text-left transition hover:bg-[#2A2A38] focus:outline-none focus:ring-2 focus:ring-white/20"
+              :style="cellStyle"
+            >
+              <span class="sr-only">
+                Registra ore per il {{ day.dayNumber }} {{ day.weekdayLabel }} alle {{ formatHour(hour) }}
+              </span>
+            </button>
+          </template>
+        </div>
       </div>
-    </div>
-  </section>
+    </section>
+  </InnerPage>
 </template>
 
 <script setup lang="ts">
+import InnerPage from '@/components/layout/innerPage.vue'
+import { ChevronLeft, ChevronRight } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
 
 const dailyStartingHour = 9
 const dailyFinishingHour = 19
-const cellHeight = '15px'
-const cellWidth = '84px'
+const cellHeight = '20px'
+const cellWidth = '100px'
 const dayHeaderWidth = '92px'
 
 const selectedMonth = ref(startOfMonth(new Date()))
@@ -128,27 +141,41 @@ const daysInMonth = computed(() => {
 })
 
 const gridTemplateColumns = computed(() => ({
-  gridTemplateColumns: `${dayHeaderWidth} repeat(${hours.value.length}, minmax(${cellWidth}, 1fr))`,
+  gridTemplateColumns: `${dayHeaderWidth} repeat(${hours.value.length}, ${cellWidth})`,
 }))
 
 const cornerHeaderStyle = computed(() => ({
   minHeight: cellHeight,
+  height: cellHeight,
+  maxHeight: cellHeight,
   width: dayHeaderWidth,
 }))
 
 const columnHeaderStyle = computed(() => ({
   minHeight: cellHeight,
+  height: cellHeight,
+  maxHeight: cellHeight,
+  boxSizing: 'border-box',
+  overflow: 'hidden',
   minWidth: cellWidth,
+  maxWidth: cellWidth,
 }))
 
 const rowHeaderStyle = computed(() => ({
   minHeight: cellHeight,
+  height: cellHeight,
+  maxHeight: cellHeight,
   width: dayHeaderWidth,
 }))
 
 const cellStyle = computed(() => ({
   minHeight: cellHeight,
+  height: cellHeight,
+  maxHeight: cellHeight,
+  boxSizing: 'border-box',
+  overflow: 'hidden',
   minWidth: cellWidth,
+  maxWidth: cellWidth,
 }))
 
 function goToPreviousMonth() {
