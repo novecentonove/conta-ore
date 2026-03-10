@@ -19,6 +19,7 @@
         :get-slot-summary="getSlotSummary"
         :get-slot-segments="getSlotSegments"
         :timesheet-fill-color="timesheetFillColor"
+        :timesheet-border-color="timesheetBorderColor"
         @select-slot="openDrawer"
       />
 
@@ -68,6 +69,7 @@ const cellHeight = '20px'
 const cellWidth = '100px'
 const dayHeaderWidth = '92px'
 const timesheetFillColor = 'rgba(120, 170, 255, 0.35)'
+const timesheetBorderColor = 'rgba(120, 170, 255, 0.8)'
 
 const selectedMonth = ref(startOfMonth(new Date()))
 const isDrawerOpen = ref(false)
@@ -189,6 +191,8 @@ type SlotSegment = {
   startMinute: number
   endMinute: number
   entryId: number
+  isStart: boolean
+  isEnd: boolean
 }
 
 const segmentsBySlot = computed(() => {
@@ -233,6 +237,8 @@ const segmentsBySlot = computed(() => {
         startMinute: segmentStart - hourStart,
         endMinute: segmentEnd - hourStart,
         entryId: entry.id,
+        isStart: segmentStart === startTotal,
+        isEnd: segmentEnd === endTotal,
       })
       map.set(key, list)
     }

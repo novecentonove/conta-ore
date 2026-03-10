@@ -50,16 +50,16 @@
             <span
               v-for="segment in getSlotSegments(day.iso, hour)"
               :key="`${day.iso}-${hour}-${segment.entryId}-${segment.startMinute}`"
-              class="absolute inset-y-0 rounded-sm"
+              :class="segmentClass(segment)"
               :style="segmentStyle(segment)"
             />
           </div>
-          <span
+          <!-- <span
             v-if="getSlotSummary(day.iso, hour)"
             class="relative z-10 text-[10px] font-semibold text-white/80"
           >
             {{ getSlotSummary(day.iso, hour) }}
-          </span>
+          </span> -->
         </button>
       </template>
     </div>
@@ -73,6 +73,8 @@ type SlotSegment = {
   startMinute: number
   endMinute: number
   entryId: number
+  isStart: boolean
+  isEnd: boolean
 }
 
 const props = defineProps<{
@@ -87,6 +89,7 @@ const props = defineProps<{
   getSlotSummary: (dayIso: string, hour: number) => string
   getSlotSegments: (dayIso: string, hour: number) => SlotSegment[]
   timesheetFillColor: string
+  timesheetBorderColor: string
 }>()
 
 const emit = defineEmits<{
@@ -99,6 +102,20 @@ function segmentStyle(segment: SlotSegment) {
     left: `${(segment.startMinute / 60) * 100}%`,
     width: `${(widthMinutes / 60) * 100}%`,
     backgroundColor: props.timesheetFillColor,
+    boxSizing: 'border-box',
+    borderTop: `1px solid ${props.timesheetBorderColor}`,
+    borderBottom: `1px solid ${props.timesheetBorderColor}`,
+    borderLeft: segment.isStart ? `1px solid ${props.timesheetBorderColor}` : '0',
+    borderRight: segment.isEnd ? `1px solid ${props.timesheetBorderColor}` : '0',
   }
+}
+
+function segmentClass(segment: SlotSegment) {
+  return [
+    'absolute inset-y-0',
+    segment.isStart ? 'rounded-l-sm' : '',
+    segment.isEnd ? 'rounded-r-sm' : '',
+    segment.isStart && segment.isEnd ? 'rounded-sm' : '',
+  ]
 }
 </script>

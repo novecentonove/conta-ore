@@ -78,6 +78,11 @@ export async function createTimesheet(input: {
   const db = await getActiveDatabase()
   const createdAt = input.created_at ?? new Date().toISOString()
 
+  await assertNoTimesheetOverlap({
+    time_from: input.time_from,
+    time_to: input.time_to ?? null,
+  })
+
   const result = await db.execute(
     `INSERT INTO timesheets (project_id, time_from, time_to, note, created_at)
      VALUES ($1, $2, $3, $4, $5)`,
@@ -102,6 +107,12 @@ export async function updateTimesheet(input: {
 }) {
   const db = await getActiveDatabase()
 
+  await assertNoTimesheetOverlap({
+    time_from: input.time_from,
+    time_to: input.time_to ?? null,
+    excludeId: input.id,
+  })
+
   await db.execute(
     `UPDATE timesheets
      SET project_id = $1,
@@ -125,6 +136,40 @@ export async function deleteTimesheet(id: number) {
     `DELETE FROM timesheets WHERE id = $1`,
     [id],
   )
+}
+
+async function assertNoTimesheetOverlap(input: {
+  time_from: string
+  time_to: string | null
+  excludeId?: number
+}) {
+  const db = await getActiveDatabase()
+  const excludeId = input.excludeId ?? -1
+  const timeFrom = input.time_from
+  const timeTo = input.time_to
+
+  const conflicts = timeTo
+    ? await db.select<{ id: number }[]>(
+      `SELECT id
+       FROM timesheets
+       WHERE id != $1
+         AND time_from < $2
+         AND (time_to IS NULL OR time_to > $3)
+       LIMIT 1`,
+      [excludeId, timeTo, timeFrom],
+    )
+    : await db.select<{ id: number }[]>(
+      `SELECT id
+       FROM timesheets
+       WHERE id != $1
+         AND (time_to IS NULL OR time_to > $2)
+       LIMIT 1`,
+      [excludeId, timeFrom],
+    )
+
+  if (conflicts.length > 0) {
+    throw new Error('Questo orario si sovrappone a una traccia esistente.')
+  }
 }
 
 export async function getSQLiteStorageDir() {
