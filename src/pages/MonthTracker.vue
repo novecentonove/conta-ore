@@ -17,6 +17,8 @@
         :cell-style="cellStyle"
         :format-hour="formatHour"
         :get-slot-summary="getSlotSummary"
+        :get-slot-segments="getSlotSegments"
+        :timesheet-fill-color="timesheetFillColor"
         @select-slot="openDrawer"
       />
 
@@ -65,6 +67,7 @@ const dailyFinishingHour = 19
 const cellHeight = '20px'
 const cellWidth = '100px'
 const dayHeaderWidth = '92px'
+const timesheetFillColor = 'rgba(120, 170, 255, 0.35)'
 
 const selectedMonth = ref(startOfMonth(new Date()))
 const isDrawerOpen = ref(false)
@@ -182,6 +185,62 @@ const timesheetSummary = computed(() => {
   return summary
 })
 
+type SlotSegment = {
+  startMinute: number
+  endMinute: number
+  entryId: number
+}
+
+const segmentsBySlot = computed(() => {
+  const map = new Map<string, SlotSegment[]>()
+
+  for (const entry of timesheets.value) {
+    if (!entry.time_to) {
+      continue
+    }
+
+    const startDate = parseLocalDateTime(entry.time_from)
+    const endDate = parseLocalDateTime(entry.time_to)
+
+    if (!startDate || !endDate) {
+      continue
+    }
+
+    const startTotal = startDate.getHours() * 60 + startDate.getMinutes()
+    const endTotal = endDate.getHours() * 60 + endDate.getMinutes()
+
+    if (endTotal <= startTotal) {
+      continue
+    }
+
+    const dayIso = toIsoDate(startDate)
+    const startHour = Math.floor(startTotal / 60)
+    const endHour = Math.floor((endTotal - 1) / 60)
+
+    for (let hour = startHour; hour <= endHour; hour += 1) {
+      const hourStart = hour * 60
+      const hourEnd = hourStart + 60
+      const segmentStart = Math.max(startTotal, hourStart)
+      const segmentEnd = Math.min(endTotal, hourEnd)
+
+      if (segmentEnd <= segmentStart) {
+        continue
+      }
+
+      const key = slotKey(dayIso, hour)
+      const list = map.get(key) ?? []
+      list.push({
+        startMinute: segmentStart - hourStart,
+        endMinute: segmentEnd - hourStart,
+        entryId: entry.id,
+      })
+      map.set(key, list)
+    }
+  }
+
+  return map
+})
+
 const entryBySlot = computed(() => {
   const map = new Map<string, TimesheetEntry>()
 
@@ -240,6 +299,10 @@ function getSlotSummary(dayIso: string, hour: number) {
   }
 
   return `${summary.count}×`
+}
+
+function getSlotSegments(dayIso: string, hour: number) {
+  return segmentsBySlot.value.get(slotKey(dayIso, hour)) ?? []
 }
 
 async function loadTimesheets() {

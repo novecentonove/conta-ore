@@ -119,6 +119,14 @@ export async function updateTimesheet(input: {
   )
 }
 
+export async function deleteTimesheet(id: number) {
+  const db = await getActiveDatabase()
+  await db.execute(
+    `DELETE FROM timesheets WHERE id = $1`,
+    [id],
+  )
+}
+
 export async function getSQLiteStorageDir() {
   return invoke<string>('get_sqlite_storage_dir')
 }

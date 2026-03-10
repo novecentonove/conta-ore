@@ -39,16 +39,24 @@
           v-for="hour in hours"
           :key="`${day.iso}-${hour}`"
           type="button"
-          class="bg-[#20202A] px-3 py-1 text-left transition hover:bg-[#2A2A38] focus:outline-none focus:ring-2 focus:ring-white/20"
+          class="relative bg-[#20202A] px-3 py-1 text-left transition hover:bg-[#2A2A38] focus:outline-none focus:ring-2 focus:ring-white/20"
           :style="cellStyle"
           @click="emit('select-slot', day, hour)"
         >
           <span class="sr-only">
             Registra ore per il {{ day.dayNumber }} {{ day.weekdayLabel }} alle {{ formatHour(hour) }}
           </span>
+          <div class="pointer-events-none absolute inset-0">
+            <span
+              v-for="segment in getSlotSegments(day.iso, hour)"
+              :key="`${day.iso}-${hour}-${segment.entryId}-${segment.startMinute}`"
+              class="absolute inset-y-0 rounded-sm"
+              :style="segmentStyle(segment)"
+            />
+          </div>
           <span
             v-if="getSlotSummary(day.iso, hour)"
-            class="text-[10px] font-semibold text-white/80"
+            class="relative z-10 text-[10px] font-semibold text-white/80"
           >
             {{ getSlotSummary(day.iso, hour) }}
           </span>
@@ -61,7 +69,13 @@
 <script setup lang="ts">
 import type { CalendarDay } from '@/lib/time'
 
-defineProps<{
+type SlotSegment = {
+  startMinute: number
+  endMinute: number
+  entryId: number
+}
+
+const props = defineProps<{
   days: CalendarDay[]
   hours: number[]
   gridTemplateColumns: Record<string, string>
@@ -71,9 +85,20 @@ defineProps<{
   cellStyle: Record<string, string | number>
   formatHour: (hour: number) => string
   getSlotSummary: (dayIso: string, hour: number) => string
+  getSlotSegments: (dayIso: string, hour: number) => SlotSegment[]
+  timesheetFillColor: string
 }>()
 
 const emit = defineEmits<{
   (event: 'select-slot', day: CalendarDay, hour: number): void
 }>()
+
+function segmentStyle(segment: SlotSegment) {
+  const widthMinutes = Math.max(0, segment.endMinute - segment.startMinute)
+  return {
+    left: `${(segment.startMinute / 60) * 100}%`,
+    width: `${(widthMinutes / 60) * 100}%`,
+    backgroundColor: props.timesheetFillColor,
+  }
+}
 </script>

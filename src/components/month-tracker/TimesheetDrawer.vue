@@ -12,7 +12,12 @@
           </DrawerDescription>
         </div>
 
-        <Button variant="link" class="w-8 text-white" @click="emit('update:open', false)" :disabled="isSaving">
+        <Button
+          variant="link"
+          class="w-8 text-white"
+          @click="emit('update:open', false)"
+          :disabled="isSaving || isDeleting"
+        >
           <CloseIcon />
         </Button>
 
@@ -29,22 +34,22 @@
                 Inizio
               </label>
               <input
-                v-model="startTime"
-                type="time"
-                class="h-9 rounded-md border border-white/10 bg-[#262633] px-3 text-sm text-white/90 outline-none focus:border-white/20 disabled:opacity-60"
-                :disabled="isSaving || !hasActiveDatabase"
-              >
+              v-model="startTime"
+              type="time"
+              class="h-9 rounded-md border border-white/10 bg-[#262633] px-3 text-sm text-white/90 outline-none focus:border-white/20 disabled:opacity-60"
+              :disabled="isSaving || isDeleting || !hasActiveDatabase"
+            >
             </div>
             <div class="grid gap-2">
               <label class="text-xs font-semibold uppercase tracking-[0.2em] text-white/45">
                 Fine
               </label>
               <input
-                v-model="endTime"
-                type="time"
-                class="h-9 rounded-md border border-white/10 bg-[#262633] px-3 text-sm text-white/90 outline-none focus:border-white/20 disabled:opacity-60"
-                :disabled="isSaving || !hasActiveDatabase"
-              >
+              v-model="endTime"
+              type="time"
+              class="h-9 rounded-md border border-white/10 bg-[#262633] px-3 text-sm text-white/90 outline-none focus:border-white/20 disabled:opacity-60"
+              :disabled="isSaving || isDeleting || !hasActiveDatabase"
+            >
             </div>
           </div>
 
@@ -56,7 +61,7 @@
               v-model="note"
               rows="3"
               class="min-h-22.5 resize-y bg-[#262633] border-0"
-              :disabled="isSaving || !hasActiveDatabase"
+              :disabled="isSaving || isDeleting || !hasActiveDatabase"
             />
           </div>
         </div>
@@ -69,8 +74,40 @@
         {{ saveError }}
       </p>
 
-      <DrawerFooter class="flex-row items-center justify-end">
-        <Button :disabled="!canSave || isSaving" @click="handleSave">
+      <DrawerFooter class="flex-row items-center">
+        <AlertDialog v-if="existingEntry">
+          <AlertDialogTrigger as-child>
+            <Button
+              variant="destructive"
+              :disabled="isSaving || isDeleting"
+            >
+              Elimina
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>
+                Eliminare la traccia?
+              </AlertDialogTitle>
+              <AlertDialogDescription>
+                Questa azione elimina definitivamente l'orario selezionato.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel :disabled="isDeleting">
+                Annulla
+              </AlertDialogCancel>
+              <AlertDialogAction
+                variant="destructive"
+                :disabled="isDeleting"
+                @click="handleDelete"
+              >
+                {{ isDeleting ? 'Eliminazione...' : 'Elimina' }}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+        <Button class="ml-auto" :disabled="!canSave || isSaving || isDeleting" @click="handleSave">
           {{ isSaving ? 'Salvataggio...' : submitLabel }}
         </Button>
 
@@ -82,6 +119,17 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { Button } from '@/components/ui/button'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog'
 import { Textarea } from '@/components/ui/textarea'
 import {
   Drawer,
@@ -91,7 +139,12 @@ import {
   DrawerHeader,
   DrawerTitle,
 } from '@/components/ui/drawer'
-import { createTimesheet, updateTimesheet, type TimesheetEntry } from '@/lib/database'
+import {
+  createTimesheet,
+  deleteTimesheet,
+  updateTimesheet,
+  type TimesheetEntry,
+} from '@/lib/database'
 import type { CalendarDay } from '@/lib/time'
 import {
   addMinutesToTime,
@@ -127,6 +180,7 @@ const startTime = ref('')
 const endTime = ref('')
 const note = ref('')
 const isSaving = ref(false)
+const isDeleting = ref(false)
 const saveError = ref('')
 
 const drawerTitle = computed(() => (
@@ -238,6 +292,34 @@ async function handleSave() {
     saveError.value = toErrorMessage(error)
   } finally {
     isSaving.value = false
+  }
+}
+
+async function handleDelete() {
+  if (!props.existingEntry) {
+    return
+  }
+
+  if (isDeleting.value) {
+    return
+  }
+
+  if (!props.hasActiveDatabase) {
+    saveError.value = 'Seleziona un database prima di eliminare.'
+    return
+  }
+
+  isDeleting.value = true
+  saveError.value = ''
+
+  try {
+    await deleteTimesheet(props.existingEntry.id)
+    emit('saved')
+    emit('update:open', false)
+  } catch (error) {
+    saveError.value = toErrorMessage(error)
+  } finally {
+    isDeleting.value = false
   }
 }
 
