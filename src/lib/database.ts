@@ -12,6 +12,16 @@ const storedDatabaseName = readStoredDatabaseName()
 
 export const activeDatabaseName = ref<string | null>(storedDatabaseName)
 
+export type TimesheetEntry = {
+  id: number
+  project_id: number | null
+  time_from: string
+  time_to: string | null
+  duration_minutes: number | null
+  note: string | null
+  created_at: string | null
+}
+
 export function getConnectionString(databaseName: string) {
   return `sqlite:${databaseName}`
 }
@@ -47,6 +57,45 @@ export async function importDatabase(file: File) {
   return savedName
 }
 
+export async function listTimesheetsBetween(start: string, end: string) {
+  const db = await getActiveDatabase()
+
+  return db.select<TimesheetEntry[]>(
+    `SELECT id, project_id, time_from, time_to, duration_minutes, note, created_at
+     FROM timesheets
+     WHERE time_from >= $1 AND time_from < $2
+     ORDER BY time_from ASC`,
+    [start, end],
+  )
+}
+
+export async function createTimesheet(input: {
+  time_from: string
+  time_to?: string | null
+  duration_minutes?: number | null
+  note?: string | null
+  project_id?: number | null
+  created_at?: string | null
+}) {
+  const db = await getActiveDatabase()
+  const createdAt = input.created_at ?? new Date().toISOString()
+
+  const result = await db.execute(
+    `INSERT INTO timesheets (project_id, time_from, time_to, duration_minutes, note, created_at)
+     VALUES ($1, $2, $3, $4, $5, $6)`,
+    [
+      input.project_id ?? null,
+      input.time_from,
+      input.time_to ?? null,
+      input.duration_minutes ?? null,
+      input.note ?? null,
+      createdAt,
+    ],
+  )
+
+  return result.lastInsertId ?? null
+}
+
 export async function getSQLiteStorageDir() {
   return invoke<string>('get_sqlite_storage_dir')
 }
@@ -54,6 +103,10 @@ export async function getSQLiteStorageDir() {
 export function clearActiveDatabase() {
   activeDatabaseName.value = null
   localStorage.removeItem(ACTIVE_DATABASE_KEY)
+}
+
+export function setActiveDatabase(databaseName: string) {
+  setActiveDatabaseName(databaseName)
 }
 
 function setActiveDatabaseName(databaseName: string) {
@@ -65,6 +118,15 @@ async function loadDatabase(databaseName: string) {
   const db = await Database.load(getConnectionString(databaseName))
   await db.execute('PRAGMA foreign_keys = ON')
   return db
+}
+
+async function getActiveDatabase() {
+  const databaseName = activeDatabaseName.value
+  if (!databaseName) {
+    throw new Error('Seleziona un database prima di salvare le ore.')
+  }
+
+  return loadDatabase(databaseName)
 }
 
 async function applyInitialMigration(db: Database) {

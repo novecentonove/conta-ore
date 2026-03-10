@@ -80,31 +80,24 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { ref } from 'vue'
 import { open, save } from '@tauri-apps/plugin-dialog'
 
 import {
   activeDatabaseName,
   clearActiveDatabase,
   createDatabaseAtPath,
-  getSQLiteStorageDir,
+  setActiveDatabase,
 } from '@/lib/database'
 import InnerPage from '@/components/layout/innerPage.vue'
 import Button from '@/components/ui/button/Button.vue'
 
-const storageDir = ref('')
+const defaultBaseDir = '/home'
+const storageDir = ref(defaultBaseDir)
 const defaultDatabaseName = 'conta-ore.sqlite'
 const statusMessage = ref('')
 const errorMessage = ref('')
 const isBusy = ref(false)
-
-onMounted(async () => {
-  try {
-    storageDir.value = await getSQLiteStorageDir()
-  } catch (error) {
-    errorMessage.value = toErrorMessage(error)
-  }
-})
 
 async function handleSelectDatabase() {
   try {
@@ -131,7 +124,10 @@ async function handleSelectDatabase() {
     clearFeedback()
     isBusy.value = true
 
-    const selectedDatabase = await createDatabaseAtPath(databasePath)
+    const selectedDatabase = await createDatabaseAtPath(
+      normalizePath(databasePath),
+    )
+    setActiveDatabase(selectedDatabase)
     statusMessage.value = `Database selezionato: ${selectedDatabase}`
   } catch (error) {
     errorMessage.value = toErrorMessage(error)
@@ -164,7 +160,10 @@ async function handleCreateDatabase() {
     clearFeedback()
     isBusy.value = true
 
-    const databasePath = await createDatabaseAtPath(selectedPath)
+    const databasePath = await createDatabaseAtPath(
+      normalizePath(selectedPath),
+    )
+    setActiveDatabase(databasePath)
     statusMessage.value = `Database creato e selezionato: ${databasePath}`
   } catch (error) {
     errorMessage.value = toErrorMessage(error)
@@ -202,6 +201,37 @@ function toErrorMessage(error: unknown) {
     return error.message
   }
 
+  if (typeof error === 'string') {
+    return error
+  }
+
+  if (error && typeof error === 'object' && 'message' in error) {
+    const message = (error as { message?: unknown }).message
+    if (typeof message === 'string') {
+      return message
+    }
+  }
+
+  try {
+    return JSON.stringify(error)
+  } catch {
+    // ignore
+  }
+
   return 'Si e\' verificato un errore inatteso.'
+}
+
+function normalizePath(path: string) {
+  let normalized = path
+
+  if (normalized.startsWith('file://')) {
+    try {
+      normalized = decodeURIComponent(new URL(normalized).pathname)
+    } catch {
+      normalized = normalized.replace(/^file:\/+/, '/')
+    }
+  }
+
+  return normalized.replace(/\\/g, '/').replace(/\/+$/, '')
 }
 </script>
