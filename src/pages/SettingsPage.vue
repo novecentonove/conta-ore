@@ -1,5 +1,6 @@
 <template>
-  <section class="flex flex-col gap-12 h-full overflow-auto px-16 pb-6 pt-4">
+  <InnerPage>
+  <section class="space-y-12">
     <div>
       <p class="text-xs font-medium uppercase tracking-[0.24em] text-white/45">
         Settings
@@ -7,63 +8,58 @@
       <h1 class="mt-2 text-3xl font-semibold tracking-tight text-white">
         Database
       </h1>
-      <p class="mt-3 max-w-2xl text-sm leading-6 text-white/60">
-        Seleziona un database esistente oppure crea un nuovo file SQLite. Il percorso predefinito
-        e' la directory locale dell'app.
+      <p class="mt-3 text-sm leading-6 text-white/60">
+        Seleziona un database esistente oppure crea un nuovo file SQLite
       </p>
     </div>
 
-    <div class="grid gap-10">
-      <div>
+    <div class="space-y-12">
+      <div class="space-y-3 p-6 border border-white/90 max-w-2xl rounded">
         <p class="text-xs font-medium uppercase tracking-[0.24em] text-white/45">
           Database
         </p>
-        <p class="mt-3 text-sm leading-6 text-white/60">
+        <p class="mt-3 text-sm text-white/60">
           {{ activeDatabaseName ?? 'Nessun database selezionato' }}
         </p>
-        <button
-          type="button"
-          class="mt-5 inline-flex h-11 items-center justify-center rounded-2xl border border-white/15 bg-white/5 px-4 text-xs font-semibold uppercase tracking-[0.18em] text-white/80 transition hover:border-white/25 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
+        <Button
           :disabled="isBusy || !activeDatabaseName"
           @click="handleDetachDatabase"
         >
           {{ isBusy ? 'Attendi...' : 'Sgancia database' }}
-        </button>
+        </Button>
       </div>
 
-      <div>
+      <div class="space-y-3">
         <p class="text-xs font-medium uppercase tracking-[0.24em] text-white/45">
           Seleziona Database
         </p>
         <p class="mt-3 text-sm leading-6 text-white/60">
           Scegli un file SQLite gia' esistente e impostalo come database attivo.
         </p>
-        <button
-          type="button"
-          class="mt-5 inline-flex h-11 items-center justify-center rounded-2xl border border-white/15 bg-white/5 px-4 text-xs font-semibold uppercase tracking-[0.18em] text-white/80 transition hover:border-white/25 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
+        <Button 
+          variant="secondary"
           :disabled="isBusy || activeDatabaseName !== null"
           @click="handleSelectDatabase"
         >
           {{ isBusy ? 'Attendi...' : 'Seleziona database' }}
-        </button>
+        </Button>
       </div>
 
-      <div>
+      <div class="space-y-3">
         <p class="text-xs font-medium uppercase tracking-[0.24em] text-white/45">
           Crea Database
         </p>
         <p class="mt-3 text-sm leading-6 text-white/60">
-          Crea un nuovo file SQLite: verra' selezionato automaticamente.
+          Crea un nuovo file SQLite: verra' attivato automaticamente.
         </p>
-        <div class="mt-5 flex flex-col gap-3 max-w-2xl">
-          <button
-            type="button"
-            class="inline-flex h-11 items-center justify-center rounded-2xl border border-white/15 bg-white/5 px-4 text-xs font-semibold uppercase tracking-[0.18em] text-white/80 transition hover:border-white/25 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
+        <div class="space-y-3 mt-5 gap-3 max-w-2xl">
+          <Button
+            variant="secondary"
             :disabled="isBusy || activeDatabaseName !== null"
             @click="handleCreateDatabase"
           >
             {{ isBusy ? 'Attendi...' : 'Crea database' }}
-          </button>
+          </Button>
           <p class="break-all text-xs leading-6 text-white/45">
             {{ storageDir ? `Predefinito: ${storageDir}` : 'Caricamento percorso...' }}
           </p>
@@ -80,6 +76,7 @@
       </p>
     </div>
   </section>
+  </InnerPage>
 </template>
 
 <script setup lang="ts">
@@ -92,7 +89,8 @@ import {
   createDatabaseAtPath,
   getSQLiteStorageDir,
 } from '@/lib/database'
-
+import InnerPage from '@/components/layout/innerPage.vue'
+import Button from '@/components/ui/button/Button.vue'
 
 const storageDir = ref('')
 const defaultDatabaseName = 'conta-ore.sqlite'

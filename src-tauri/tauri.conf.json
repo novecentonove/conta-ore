@@ -13,8 +13,8 @@
     "windows": [
       {
         "title": "conta-ore",
-        "width": 2800,
-        "height": 1700,
+        "width": 1800,
+        "height": 1000,
         "decorations": false
       }
     ],
