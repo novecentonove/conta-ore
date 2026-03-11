@@ -23,14 +23,19 @@
       <template v-for="day in days" :key="`row-${day.iso}`">
         <div :style="rowHeaderStyle" class="flex justify-center items-center">
           <div>
-            <div class="px-4 flex items-center space-x-3">
+            <div class="px-3 flex items-center space-x-2">
               <span class="text-right w-6 text-sm font-semibold text-white tabular-nums">
                 {{ day.dayNumber }}
               </span>
 
-              <span class="w-12 text-left text-xs font-semibold uppercase text-white/45">
+              <span class="w-10 text-left text-xs font-semibold uppercase text-white/45">
                 {{ day.weekdayLabel }}
               </span>
+
+              <div class="w-12 text-[12px] text-white/60 tabular-nums">
+                {{ getDayTotalLabel(day.iso) }}
+              </div>
+
             </div>
           </div>
         </div>
@@ -62,12 +67,20 @@
           </span> -->
         </button>
       </template>
+
+      <MonthTrackerGridFooter
+        :hours="hours"
+        :row-header-style="rowHeaderStyle"
+        :cell-style="cellStyle"
+        :total-label="monthTotalLabel"
+      />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import type { CalendarDay } from '@/lib/time'
+import MonthTrackerGridFooter from './MonthTrackerGridFooter.vue'
 
 type SlotSegment = {
   startMinute: number
@@ -86,6 +99,8 @@ const props = defineProps<{
   rowHeaderStyle: Record<string, string | number>
   cellStyle: Record<string, string | number>
   formatHour: (hour: number) => string
+  getDayTotalLabel: (dayIso: string) => string
+  monthTotalLabel: string
   getSlotSummary: (dayIso: string, hour: number) => string
   getSlotSegments: (dayIso: string, hour: number) => SlotSegment[]
   timesheetFillColor: string
@@ -98,9 +113,12 @@ const emit = defineEmits<{
 
 function segmentStyle(segment: SlotSegment) {
   const widthMinutes = Math.max(0, segment.endMinute - segment.startMinute)
+  const gapBleedPx = segment.isEnd ? 0 : 1
   return {
     left: `${(segment.startMinute / 60) * 100}%`,
-    width: `${(widthMinutes / 60) * 100}%`,
+    width: gapBleedPx
+      ? `calc(${(widthMinutes / 60) * 100}% + ${gapBleedPx}px)`
+      : `${(widthMinutes / 60) * 100}%`,
     backgroundColor: props.timesheetFillColor,
     boxSizing: 'border-box',
     borderTop: `1px solid ${props.timesheetBorderColor}`,

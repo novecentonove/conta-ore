@@ -74,43 +74,31 @@
         {{ saveError }}
       </p>
 
-      <DrawerFooter class="flex-row items-center">
-        <AlertDialog v-if="existingEntry">
-          <AlertDialogTrigger as-child>
-            <Button
-              variant="destructive"
-              :disabled="isSaving || isDeleting"
-            >
-              Elimina
-            </Button>
-          </AlertDialogTrigger>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>
-                Eliminare la traccia?
-              </AlertDialogTitle>
-              <AlertDialogDescription>
-                Questa azione elimina definitivamente l'orario selezionato.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel :disabled="isDeleting">
-                Annulla
-              </AlertDialogCancel>
-              <AlertDialogAction
+      <DrawerFooter class="flex-col items-stretch gap-3">
+        <div class="flex items-center">
+          <ConfirmDialog
+            v-if="existingEntry"
+            v-model:open="showDeleteConfirm"
+            title="Eliminare la traccia?"
+            description="Questa azione elimina definitivamente l'orario selezionato."
+            :confirm-label="isDeleting ? 'Eliminazione...' : 'Elimina'"
+            :confirm-disabled="isDeleting"
+            :cancel-disabled="isDeleting"
+            @confirm="handleDelete"
+          >
+            <template #trigger>
+              <Button
                 variant="destructive"
-                :disabled="isDeleting"
-                @click="handleDelete"
+                :disabled="isSaving || isDeleting"
               >
-                {{ isDeleting ? 'Eliminazione...' : 'Elimina' }}
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-        <Button class="ml-auto" :disabled="!canSave || isSaving || isDeleting" @click="handleSave">
-          {{ isSaving ? 'Salvataggio...' : submitLabel }}
-        </Button>
-
+                Elimina
+              </Button>
+            </template>
+          </ConfirmDialog>
+          <Button class="ml-auto" :disabled="!canSave || isSaving || isDeleting" @click="handleSave">
+            {{ isSaving ? 'Salvataggio...' : submitLabel }}
+          </Button>
+        </div>
       </DrawerFooter>
     </DrawerContent>
   </Drawer>
@@ -119,17 +107,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { Button } from '@/components/ui/button'
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from '@/components/ui/alert-dialog'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { Textarea } from '@/components/ui/textarea'
 import {
   Drawer,
@@ -181,6 +159,7 @@ const endTime = ref('')
 const note = ref('')
 const isSaving = ref(false)
 const isDeleting = ref(false)
+const showDeleteConfirm = ref(false)
 const saveError = ref('')
 
 const drawerTitle = computed(() => (
@@ -209,6 +188,8 @@ watch(
     if (!slot || !isOpen) {
       return
     }
+
+    showDeleteConfirm.value = false
 
     if (entry) {
       const startDate = parseLocalDateTime(entry.time_from)

@@ -1,7 +1,7 @@
 <template>
-  <header class="ml-4 space-y-4">
+  <header class="flex items-center gap-4 ml-5 mb-2">
     <div>
-      <h1 class="mt-2 font-semibold text-white">
+      <h1 class="font-semibold text-white">
         {{ monthLabel }}
       </h1>
     </div>

@@ -16,6 +16,8 @@
         :row-header-style="rowHeaderStyle"
         :cell-style="cellStyle"
         :format-hour="formatHour"
+        :get-day-total-label="getDayTotalLabel"
+        :month-total-label="monthTotalLabel"
         :get-slot-summary="getSlotSummary"
         :get-slot-segments="getSlotSegments"
         :timesheet-fill-color="timesheetFillColor"
@@ -67,7 +69,7 @@ const dailyStartingHour = 9
 const dailyFinishingHour = 19
 const cellHeight = '20px'
 const cellWidth = '100px'
-const dayHeaderWidth = '92px'
+const dayHeaderWidth = '128px'
 const timesheetFillColor = 'rgba(120, 170, 255, 0.35)'
 const timesheetBorderColor = 'rgba(120, 170, 255, 0.8)'
 
@@ -156,7 +158,7 @@ const cellStyle = computed(() => ({
   height: cellHeight,
   maxHeight: cellHeight,
   boxSizing: 'border-box',
-  overflow: 'hidden',
+  overflow: 'visible',
   minWidth: cellWidth,
   maxWidth: cellWidth,
 }))
@@ -186,6 +188,50 @@ const timesheetSummary = computed(() => {
 
   return summary
 })
+
+const dailyTotals = computed(() => {
+  const totals = new Map<string, number>()
+
+  for (const entry of timesheets.value) {
+    if (!entry.time_to) {
+      continue
+    }
+
+    const startDate = parseLocalDateTime(entry.time_from)
+    const endDate = parseLocalDateTime(entry.time_to)
+
+    if (!startDate || !endDate || endDate <= startDate) {
+      continue
+    }
+
+    let cursor = new Date(startDate)
+
+    while (cursor < endDate) {
+      const dayIso = toIsoDate(cursor)
+      const dayEnd = new Date(cursor.getFullYear(), cursor.getMonth(), cursor.getDate() + 1)
+      const segmentEnd = endDate < dayEnd ? endDate : dayEnd
+      const minutes = Math.round((segmentEnd.getTime() - cursor.getTime()) / 60000)
+
+      if (minutes > 0) {
+        totals.set(dayIso, (totals.get(dayIso) ?? 0) + minutes)
+      }
+
+      cursor = dayEnd
+    }
+  }
+
+  return totals
+})
+
+const monthTotalMinutes = computed(() => {
+  let total = 0
+  for (const day of daysInMonth.value) {
+    total += dailyTotals.value.get(day.iso) ?? 0
+  }
+  return total
+})
+
+const monthTotalLabel = computed(() => formatDuration(monthTotalMinutes.value, { showZero: true }))
 
 type SlotSegment = {
   startMinute: number
@@ -265,6 +311,16 @@ const entryBySlot = computed(() => {
   return map
 })
 
+const entryById = computed(() => {
+  const map = new Map<number, TimesheetEntry>()
+
+  for (const entry of timesheets.value) {
+    map.set(entry.id, entry)
+  }
+
+  return map
+})
+
 function goToPreviousMonth() {
   selectedMonth.value = new Date(
     selectedMonth.value.getFullYear(),
@@ -289,8 +345,30 @@ function openDrawer(
   day: CalendarDay,
   hour: number,
 ) {
+  const entryKey = slotKey(day.iso, hour)
+  const segments = segmentsBySlot.value.get(entryKey) ?? []
+  let entry: TimesheetEntry | null = null
+
+  if (segments.length > 0) {
+    const seen = new Set<number>()
+    for (const segment of segments) {
+      if (seen.has(segment.entryId)) {
+        continue
+      }
+      seen.add(segment.entryId)
+      const candidate = entryById.value.get(segment.entryId)
+      if (!candidate) {
+        continue
+      }
+
+      if (!entry || candidate.time_from < entry.time_from) {
+        entry = candidate
+      }
+    }
+  }
+
   selectedSlot.value = { day, hour }
-  selectedEntry.value = entryBySlot.value.get(slotKey(day.iso, hour)) ?? null
+  selectedEntry.value = entry ?? entryBySlot.value.get(entryKey) ?? null
   isDrawerOpen.value = true
 }
 
@@ -307,8 +385,31 @@ function getSlotSummary(dayIso: string, hour: number) {
   return `${summary.count}×`
 }
 
+function getDayTotalLabel(dayIso: string) {
+  const totalMinutes = dailyTotals.value.get(dayIso)
+  if (!totalMinutes) {
+    return ''
+  }
+
+  return formatDuration(totalMinutes)
+}
+
 function getSlotSegments(dayIso: string, hour: number) {
   return segmentsBySlot.value.get(slotKey(dayIso, hour)) ?? []
+}
+
+function formatDuration(
+  totalMinutes: number,
+  options: { showZero?: boolean } = {},
+) {
+  if (totalMinutes <= 0) {
+    return options.showZero ? '00:00' : ''
+  }
+
+  const hours = Math.floor(totalMinutes / 60)
+  const minutes = totalMinutes % 60
+
+  return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`
 }
 
 async function loadTimesheets() {
