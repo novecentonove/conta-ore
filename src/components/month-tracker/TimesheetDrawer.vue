@@ -58,7 +58,7 @@
               </label>
             <select
               v-model="selectedProjectId"
-              :class="[ui.select, '!bg-transparent', 'appearance-none']"
+              :class="ui.select"
               :disabled="isSaving || isDeleting || !hasActiveDatabase || isLoadingProjects"
             >
                 <option value="">

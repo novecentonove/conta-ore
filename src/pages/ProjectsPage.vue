@@ -14,6 +14,34 @@
       </div>
 
       <div class="space-y-8">
+        <div :class="ui.section">
+          <p :class="ui.pageKicker">
+            Colore tracciamenti senza progetto
+          </p>
+          <div class="flex items-center gap-3">
+            <Input
+              id="default-timesheet-color"
+              v-model="defaultTimesheetColor"
+              type="color"
+              :class="ui.colorInput"
+              :disabled="!hasActiveDatabase || isSavingDefaultColor"
+              @change="handleDefaultColorSave"
+            />
+            <Input
+              v-model="defaultTimesheetColor"
+              type="text"
+              :class="ui.colorHexInput"
+              :disabled="!hasActiveDatabase || isSavingDefaultColor"
+              @change="handleDefaultColorSave"
+            />
+          </div>
+          <p v-if="!hasActiveDatabase" class="text-xs text-amber-200">
+            Seleziona un database per salvare il colore di default.
+          </p>
+          <p v-else-if="defaultColorError" class="text-xs text-rose-300">
+            {{ defaultColorError }}
+          </p>
+        </div>
         <div class="space-y-6">
           <div class="flex items-center justify-between">
             <p :class="ui.pageKicker">
@@ -22,8 +50,8 @@
             <Button
               variant="secondary"
               size="sm"
-              :disabled="isSaving || isDeleting"
-              @click="resetForm"
+              :disabled="!hasActiveDatabase || isSaving || isDeleting"
+              @click="startCreate"
             >
               Nuovo
             </Button>
@@ -87,7 +115,7 @@
           </div>
         </div>
 
-        <div :class="[ui.formCard, 'max-w-xl']">
+        <div v-if="showForm" :class="[ui.formCard, 'max-w-xl']">
           <p :class="ui.pageKicker">
             {{ editingProjectId ? 'Modifica progetto' : 'Nuovo progetto' }}
           </p>
@@ -141,6 +169,27 @@
             </div>
 
             <div :class="ui.formGrid">
+              <label :class="ui.fieldLabel" for="project-color">
+                Colore progetto
+              </label>
+              <div class="flex items-center gap-3">
+                <Input
+                  id="project-color"
+                  v-model="formColor"
+                  type="color"
+                  :class="ui.colorInput"
+                  :disabled="!hasActiveDatabase || !hasCustomers || isSaving || isDeleting"
+                />
+                <Input
+                  v-model="formColor"
+                  type="text"
+                  :class="ui.colorHexInput"
+                  :disabled="!hasActiveDatabase || !hasCustomers || isSaving || isDeleting"
+                />
+              </div>
+            </div>
+
+            <div :class="ui.formGrid">
               <label :class="ui.fieldLabel" for="project-rate">
                 Tariffa oraria (EUR)
               </label>
@@ -177,7 +226,7 @@
               {{ isSaving ? 'Salvataggio...' : submitLabel }}
             </Button>
             <Button
-              v-if="editingProjectId"
+              v-if="editingProjectId || isCreating"
               variant="secondary"
               :disabled="isSaving || isDeleting"
               @click="resetForm"
@@ -219,8 +268,11 @@ import {
   activeDatabaseName,
   createProject,
   deleteProject,
+  DEFAULT_TIMESHEET_COLOR,
+  getDefaultTimesheetColor,
   listCustomers,
   listProjects,
+  setDefaultTimesheetColor,
   updateProject,
   type Customer,
   type ProjectWithCustomer,
@@ -237,14 +289,21 @@ const saveError = ref('')
 const showDeleteConfirm = ref(false)
 const projectToDelete = ref<ProjectWithCustomer | null>(null)
 const editingProjectId = ref<number | null>(null)
+const isCreating = ref(false)
 
 const formName = ref('')
 const formDescription = ref('')
 const formHourlyRate = ref<string | number>('')
 const formCustomerId = ref('')
+const formColor = ref(DEFAULT_TIMESHEET_COLOR)
+
+const defaultTimesheetColor = ref(DEFAULT_TIMESHEET_COLOR)
+const isSavingDefaultColor = ref(false)
+const defaultColorError = ref('')
 
 const hasActiveDatabase = computed(() => Boolean(activeDatabaseName.value))
 const hasCustomers = computed(() => customers.value.length > 0)
+const showForm = computed(() => isCreating.value || editingProjectId.value !== null)
 const submitLabel = computed(() => (
   editingProjectId.value ? 'Aggiorna progetto' : 'Crea progetto'
 ))
@@ -280,7 +339,14 @@ function resetForm() {
   formDescription.value = ''
   formHourlyRate.value = ''
   formCustomerId.value = ''
+  formColor.value = defaultTimesheetColor.value
   saveError.value = ''
+  isCreating.value = false
+}
+
+function startCreate() {
+  resetForm()
+  isCreating.value = true
 }
 
 function startEdit(project: ProjectWithCustomer) {
@@ -289,7 +355,9 @@ function startEdit(project: ProjectWithCustomer) {
   formDescription.value = project.description ?? ''
   formHourlyRate.value = project.hourly_rate !== null ? String(project.hourly_rate) : ''
   formCustomerId.value = String(project.customer_id)
+  formColor.value = project.color ?? defaultTimesheetColor.value
   saveError.value = ''
+  isCreating.value = true
 }
 
 function requestDelete(project: ProjectWithCustomer) {
@@ -367,6 +435,7 @@ async function handleSave() {
     const description = formDescription.value.trim() || null
     const hourlyRate = parseHourlyRate()
     const customerId = parseCustomerId()
+    const color = parseProjectColor()
 
     if (editingProjectId.value) {
       await updateProject({
@@ -374,6 +443,7 @@ async function handleSave() {
         customer_id: customerId,
         name,
         description,
+        color,
         hourly_rate: hourlyRate,
       })
     } else {
@@ -381,6 +451,7 @@ async function handleSave() {
         customer_id: customerId,
         name,
         description,
+        color,
         hourly_rate: hourlyRate,
       })
     }
@@ -437,6 +508,34 @@ function parseHourlyRate() {
   return value
 }
 
+function parseProjectColor() {
+  const normalized = normalizeHexColor(formColor.value)
+  if (!normalized) {
+    throw new Error('Inserisci un colore progetto valido.')
+  }
+
+  return normalized
+}
+
+function normalizeHexColor(value: string) {
+  const trimmed = value.trim().toLowerCase()
+  if (!trimmed) {
+    return null
+  }
+
+  const match6 = /^#([0-9a-f]{6})$/.exec(trimmed)
+  if (match6) {
+    return `#${match6[1]}`
+  }
+
+  const match3 = /^#([0-9a-f]{3})$/.exec(trimmed)
+  if (match3) {
+    return `#${match3[1].split('').map((ch) => ch + ch).join('')}`
+  }
+
+  return null
+}
+
 function toErrorMessage(error: unknown) {
   if (error instanceof Error) {
     return error.message
@@ -462,11 +561,56 @@ function toErrorMessage(error: unknown) {
   return 'Si e\' verificato un errore inatteso.'
 }
 
+async function loadDefaultColor() {
+  if (!hasActiveDatabase.value) {
+    defaultTimesheetColor.value = DEFAULT_TIMESHEET_COLOR
+    defaultColorError.value = ''
+    return
+  }
+
+  try {
+    defaultTimesheetColor.value = await getDefaultTimesheetColor()
+    defaultColorError.value = ''
+    if (!isCreating.value && editingProjectId.value === null) {
+      formColor.value = defaultTimesheetColor.value
+    }
+  } catch (error) {
+    defaultTimesheetColor.value = DEFAULT_TIMESHEET_COLOR
+    defaultColorError.value = toErrorMessage(error)
+  }
+}
+
+async function handleDefaultColorSave() {
+  if (!hasActiveDatabase.value) {
+    return
+  }
+
+  const normalized = normalizeHexColor(defaultTimesheetColor.value)
+  if (!normalized) {
+    defaultColorError.value = 'Inserisci un colore esadecimale valido.'
+    return
+  }
+
+  isSavingDefaultColor.value = true
+  defaultColorError.value = ''
+
+  try {
+    await setDefaultTimesheetColor(normalized)
+    defaultTimesheetColor.value = normalized
+  } catch (error) {
+    defaultColorError.value = toErrorMessage(error)
+  } finally {
+    isSavingDefaultColor.value = false
+  }
+}
+
 async function loadData() {
   if (!hasActiveDatabase.value) {
     customers.value = []
     projects.value = []
     loadError.value = ''
+    defaultTimesheetColor.value = DEFAULT_TIMESHEET_COLOR
+    defaultColorError.value = ''
     isLoading.value = false
     return
   }
@@ -475,7 +619,7 @@ async function loadData() {
   loadError.value = ''
 
   try {
-    await Promise.all([loadCustomers(), loadProjects()])
+    await Promise.all([loadCustomers(), loadProjects(), loadDefaultColor()])
   } finally {
     isLoading.value = false
   }

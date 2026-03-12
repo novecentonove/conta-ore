@@ -50,6 +50,8 @@ import MonthTrackerHeader from '@/components/month-tracker/MonthTrackerHeader.vu
 import TimesheetDrawer from '@/components/month-tracker/TimesheetDrawer.vue'
 import {
   activeDatabaseName,
+  DEFAULT_TIMESHEET_COLOR,
+  getDefaultTimesheetColor,
   listTimesheetsBetween,
   type TimesheetEntry,
 } from '@/lib/database'
@@ -70,8 +72,9 @@ const dailyFinishingHour = 19
 const cellHeight = '20px'
 const cellWidth = '100px'
 const dayHeaderWidth = '128px'
-const timesheetFillColor = 'rgba(120, 170, 255, 0.35)'
-const timesheetBorderColor = 'rgba(120, 170, 255, 0.8)'
+const defaultTimesheetColor = ref(DEFAULT_TIMESHEET_COLOR)
+const timesheetFillColor = computed(() => toRgba(defaultTimesheetColor.value, 0.35))
+const timesheetBorderColor = computed(() => toRgba(defaultTimesheetColor.value, 0.8))
 
 const selectedMonth = ref(startOfMonth(new Date()))
 const isDrawerOpen = ref(false)
@@ -239,6 +242,8 @@ type SlotSegment = {
   entryId: number
   isStart: boolean
   isEnd: boolean
+  fillColor: string
+  borderColor: string
 }
 
 const segmentsBySlot = computed(() => {
@@ -248,6 +253,10 @@ const segmentsBySlot = computed(() => {
     if (!entry.time_to) {
       continue
     }
+
+    const entryColor = resolveTimesheetColor(entry)
+    const fillColor = toRgba(entryColor, 0.35)
+    const borderColor = toRgba(entryColor, 0.8)
 
     const startDate = parseLocalDateTime(entry.time_from)
     const endDate = parseLocalDateTime(entry.time_to)
@@ -285,6 +294,8 @@ const segmentsBySlot = computed(() => {
         entryId: entry.id,
         isStart: segmentStart === startTotal,
         isEnd: segmentEnd === endTotal,
+        fillColor,
+        borderColor,
       })
       map.set(key, list)
     }
@@ -398,6 +409,46 @@ function getSlotSegments(dayIso: string, hour: number) {
   return segmentsBySlot.value.get(slotKey(dayIso, hour)) ?? []
 }
 
+function resolveTimesheetColor(entry: TimesheetEntry) {
+  return (
+    normalizeHexColor(entry.project_color)
+    ?? normalizeHexColor(defaultTimesheetColor.value)
+    ?? DEFAULT_TIMESHEET_COLOR
+  )
+}
+
+function normalizeHexColor(value: string | null | undefined) {
+  if (!value) {
+    return null
+  }
+
+  const trimmed = value.trim().toLowerCase()
+  if (!trimmed) {
+    return null
+  }
+
+  const match6 = /^#([0-9a-f]{6})$/.exec(trimmed)
+  if (match6) {
+    return `#${match6[1]}`
+  }
+
+  const match3 = /^#([0-9a-f]{3})$/.exec(trimmed)
+  if (match3) {
+    return `#${match3[1].split('').map((ch) => ch + ch).join('')}`
+  }
+
+  return null
+}
+
+function toRgba(hex: string, alpha: number) {
+  const normalized = normalizeHexColor(hex) ?? DEFAULT_TIMESHEET_COLOR
+  const value = normalized.replace('#', '')
+  const red = Number.parseInt(value.slice(0, 2), 16)
+  const green = Number.parseInt(value.slice(2, 4), 16)
+  const blue = Number.parseInt(value.slice(4, 6), 16)
+  return `rgba(${red}, ${green}, ${blue}, ${alpha})`
+}
+
 function formatDuration(
   totalMinutes: number,
   options: { showZero?: boolean } = {},
@@ -415,6 +466,8 @@ function formatDuration(
 async function loadTimesheets() {
   if (!hasActiveDatabase.value) {
     timesheets.value = []
+    loadError.value = ''
+    isLoadingTimesheets.value = false
     return
   }
 
@@ -435,6 +488,19 @@ async function loadTimesheets() {
   }
 }
 
+async function loadDefaultTimesheetColor() {
+  if (!hasActiveDatabase.value) {
+    defaultTimesheetColor.value = DEFAULT_TIMESHEET_COLOR
+    return
+  }
+
+  try {
+    defaultTimesheetColor.value = await getDefaultTimesheetColor()
+  } catch {
+    defaultTimesheetColor.value = DEFAULT_TIMESHEET_COLOR
+  }
+}
+
 function toErrorMessage(error: unknown) {
   if (error instanceof Error) {
     return error.message
@@ -445,5 +511,6 @@ function toErrorMessage(error: unknown) {
 
 watch([selectedMonth, activeDatabaseName], () => {
   loadTimesheets()
+  loadDefaultTimesheetColor()
 }, { immediate: true })
 </script>

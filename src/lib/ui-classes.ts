@@ -1,5 +1,5 @@
 export const ui = {
-  pageSection: 'space-y-12',
+  pageSection: 'space-y-12 min-h-0 flex-1 overflow-y-auto',
   pageKicker: 'text-xs font-medium uppercase tracking-[0.24em] text-white/45',
   pageTitle: 'mt-2 text-3xl font-semibold tracking-tight text-white',
   pageSubtitle: 'mt-3 text-sm leading-6 text-white/60',
@@ -9,8 +9,10 @@ export const ui = {
   helperText: 'text-xs leading-6 text-white/45',
   fieldLabel: 'text-xs font-semibold uppercase tracking-[0.2em] text-white/45',
   input: 'h-9 rounded-md border border-white/10 bg-[#262633] px-3 text-sm text-white/90 outline-none focus:border-white/20 disabled:opacity-60',
-  select: 'h-9 w-full rounded-md border border-white/10 bg-[#262633] px-3 text-sm text-white/90 outline-none focus:border-white/20 disabled:opacity-60',
+  select: 'h-9 w-full rounded-md border border-white/10 bg-transparent px-3 text-sm text-white/90 outline-none focus:border-white/20 disabled:opacity-60 appearance-none',
   textarea: 'min-h-22.5 resize-y bg-[#262633] border-0',
+  colorInput: 'h-10 w-16 p-1',
+  colorHexInput: 'max-w-[140px]',
   listStack: 'space-y-4',
   listItem: 'flex flex-col gap-2 py-2',
   listItemHeader: 'flex items-start justify-between gap-4',

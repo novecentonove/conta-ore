@@ -101,6 +101,8 @@ type SlotSegment = {
   entryId: number
   isStart: boolean
   isEnd: boolean
+  fillColor?: string
+  borderColor?: string
 }
 
 const props = defineProps<{
@@ -127,17 +129,19 @@ const emit = defineEmits<{
 function segmentStyle(segment: SlotSegment) {
   const widthMinutes = Math.max(0, segment.endMinute - segment.startMinute)
   const gapBleedPx = segment.isEnd ? 0 : 1
+  const fillColor = segment.fillColor ?? props.timesheetFillColor
+  const borderColor = segment.borderColor ?? props.timesheetBorderColor
   return {
     left: `${(segment.startMinute / 60) * 100}%`,
     width: gapBleedPx
       ? `calc(${(widthMinutes / 60) * 100}% + ${gapBleedPx}px)`
       : `${(widthMinutes / 60) * 100}%`,
-    backgroundColor: props.timesheetFillColor,
+    backgroundColor: fillColor,
     boxSizing: 'border-box',
-    borderTop: `1px solid ${props.timesheetBorderColor}`,
-    borderBottom: `1px solid ${props.timesheetBorderColor}`,
-    borderLeft: segment.isStart ? `1px solid ${props.timesheetBorderColor}` : '0',
-    borderRight: segment.isEnd ? `1px solid ${props.timesheetBorderColor}` : '0',
+    borderTop: `1px solid ${borderColor}`,
+    borderBottom: `1px solid ${borderColor}`,
+    borderLeft: segment.isStart ? `1px solid ${borderColor}` : '0',
+    borderRight: segment.isEnd ? `1px solid ${borderColor}` : '0',
   }
 }
 

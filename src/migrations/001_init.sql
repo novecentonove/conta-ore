@@ -14,6 +14,7 @@ CREATE TABLE projects (
   customer_id INTEGER NOT NULL,
   name TEXT NOT NULL,
   description TEXT,
+  color TEXT,
   hourly_rate REAL,
   created_at TEXT,
   archived INTEGER DEFAULT 0,
@@ -36,3 +37,11 @@ CREATE TABLE timer (
   start_at TEXT NOT NULL,
   FOREIGN KEY (project_id) REFERENCES projects(id)
 );
+
+CREATE TABLE settings (
+  key TEXT PRIMARY KEY,
+  value TEXT
+);
+
+INSERT INTO settings (key, value)
+VALUES ('default_timesheet_color', '#78aaff');
