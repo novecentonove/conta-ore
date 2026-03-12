@@ -21,6 +21,29 @@ export type TimesheetEntry = {
   created_at: string | null
 }
 
+export type Customer = {
+  id: number
+  name: string
+  description: string | null
+  hourly_rate: number | null
+  created_at: string | null
+  archived: number
+}
+
+export type Project = {
+  id: number
+  customer_id: number
+  name: string
+  description: string | null
+  hourly_rate: number | null
+  created_at: string | null
+  archived: number
+}
+
+export type ProjectWithCustomer = Project & {
+  customer_name: string
+}
+
 export function getConnectionString(databaseName: string) {
   return `sqlite:${databaseName}`
 }
@@ -65,6 +88,145 @@ export async function listTimesheetsBetween(start: string, end: string) {
      WHERE time_from >= $1 AND time_from < $2
      ORDER BY time_from ASC`,
     [start, end],
+  )
+}
+
+export async function listCustomers() {
+  const db = await getActiveDatabase()
+  return db.select<Customer[]>(
+    `SELECT id, name, description, hourly_rate, created_at, archived
+     FROM customers
+     WHERE archived = 0
+     ORDER BY name COLLATE NOCASE ASC`,
+  )
+}
+
+export async function createCustomer(input: {
+  name: string
+  description?: string | null
+  hourly_rate?: number | null
+  created_at?: string | null
+}) {
+  const db = await getActiveDatabase()
+  const createdAt = input.created_at ?? new Date().toISOString()
+
+  const result = await db.execute(
+    `INSERT INTO customers (name, description, hourly_rate, created_at, archived)
+     VALUES ($1, $2, $3, $4, 0)`,
+    [
+      input.name,
+      input.description ?? null,
+      input.hourly_rate ?? null,
+      createdAt,
+    ],
+  )
+
+  return result.lastInsertId ?? null
+}
+
+export async function updateCustomer(input: {
+  id: number
+  name: string
+  description?: string | null
+  hourly_rate?: number | null
+}) {
+  const db = await getActiveDatabase()
+  await db.execute(
+    `UPDATE customers
+     SET name = $1,
+         description = $2,
+         hourly_rate = $3
+     WHERE id = $4`,
+    [
+      input.name,
+      input.description ?? null,
+      input.hourly_rate ?? null,
+      input.id,
+    ],
+  )
+}
+
+export async function deleteCustomer(id: number) {
+  const db = await getActiveDatabase()
+  await db.execute(
+    `DELETE FROM customers WHERE id = $1`,
+    [id],
+  )
+}
+
+export async function listProjects() {
+  const db = await getActiveDatabase()
+  return db.select<ProjectWithCustomer[]>(
+    `SELECT projects.id,
+            projects.customer_id,
+            projects.name,
+            projects.description,
+            projects.hourly_rate,
+            projects.created_at,
+            projects.archived,
+            customers.name as customer_name
+     FROM projects
+     JOIN customers ON customers.id = projects.customer_id
+     WHERE projects.archived = 0
+     ORDER BY projects.name COLLATE NOCASE ASC`,
+  )
+}
+
+export async function createProject(input: {
+  customer_id: number
+  name: string
+  description?: string | null
+  hourly_rate?: number | null
+  created_at?: string | null
+}) {
+  const db = await getActiveDatabase()
+  const createdAt = input.created_at ?? new Date().toISOString()
+
+  const result = await db.execute(
+    `INSERT INTO projects (customer_id, name, description, hourly_rate, created_at, archived)
+     VALUES ($1, $2, $3, $4, $5, 0)`,
+    [
+      input.customer_id,
+      input.name,
+      input.description ?? null,
+      input.hourly_rate ?? null,
+      createdAt,
+    ],
+  )
+
+  return result.lastInsertId ?? null
+}
+
+export async function updateProject(input: {
+  id: number
+  customer_id: number
+  name: string
+  description?: string | null
+  hourly_rate?: number | null
+}) {
+  const db = await getActiveDatabase()
+  await db.execute(
+    `UPDATE projects
+     SET customer_id = $1,
+         name = $2,
+         description = $3,
+         hourly_rate = $4
+     WHERE id = $5`,
+    [
+      input.customer_id,
+      input.name,
+      input.description ?? null,
+      input.hourly_rate ?? null,
+      input.id,
+    ],
+  )
+}
+
+export async function deleteProject(id: number) {
+  const db = await getActiveDatabase()
+  await db.execute(
+    `DELETE FROM projects WHERE id = $1`,
+    [id],
   )
 }
 

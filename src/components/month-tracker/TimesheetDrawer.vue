@@ -29,38 +29,70 @@
         <div class="flex flex-col gap-4">
 
           <div class="flex gap-6">
-            <div class="grid gap-2">
-              <label class="text-xs font-semibold uppercase tracking-[0.2em] text-white/45">
+            <div :class="ui.formGrid">
+              <label :class="ui.fieldLabel">
                 Inizio
               </label>
-              <input
-              v-model="startTime"
-              type="time"
-              class="h-9 rounded-md border border-white/10 bg-[#262633] px-3 text-sm text-white/90 outline-none focus:border-white/20 disabled:opacity-60"
-              :disabled="isSaving || isDeleting || !hasActiveDatabase"
-            >
+              <Input
+                v-model="startTime"
+                type="time"
+                :class="ui.input"
+                :disabled="isSaving || isDeleting || !hasActiveDatabase"
+              />
             </div>
-            <div class="grid gap-2">
-              <label class="text-xs font-semibold uppercase tracking-[0.2em] text-white/45">
+            <div :class="ui.formGrid">
+              <label :class="ui.fieldLabel">
                 Fine
               </label>
-              <input
-              v-model="endTime"
-              type="time"
-              class="h-9 rounded-md border border-white/10 bg-[#262633] px-3 text-sm text-white/90 outline-none focus:border-white/20 disabled:opacity-60"
-              :disabled="isSaving || isDeleting || !hasActiveDatabase"
-            >
+              <Input
+                v-model="endTime"
+                type="time"
+                :class="ui.input"
+                :disabled="isSaving || isDeleting || !hasActiveDatabase"
+              />
             </div>
+
+            <div :class="ui.formGrid">
+              <label :class="ui.fieldLabel">
+                Progetto
+              </label>
+            <select
+              v-model="selectedProjectId"
+              :class="[ui.select, '!bg-transparent', 'appearance-none']"
+              :disabled="isSaving || isDeleting || !hasActiveDatabase || isLoadingProjects"
+            >
+                <option value="">
+                  Nessun progetto
+                </option>
+                <option
+                  v-for="project in projects"
+                  :key="project.id"
+                  :value="String(project.id)"
+                >
+                  {{ project.name }} · {{ project.customer_name }}
+                </option>
+              </select>
+              <p v-if="projectsError" class="text-xs text-rose-300">
+                {{ projectsError }}
+              </p>
+              <p
+                v-else-if="hasActiveDatabase && !isLoadingProjects && projects.length === 0"
+                class="text-xs text-white/45"
+              >
+                Nessun progetto disponibile.
+              </p>
+            </div>
+
           </div>
 
-          <div class="grid gap-2 min-w-55 flex-1">
-            <label class="text-xs font-semibold uppercase tracking-[0.2em] text-white/45">
+          <div :class="[ui.formGrid, 'min-w-55 flex-1']">
+            <label :class="ui.fieldLabel">
               Nota
             </label>
             <Textarea
               v-model="note"
               rows="3"
-              class="min-h-22.5 resize-y bg-[#262633] border-0"
+              :class="ui.textarea"
               :disabled="isSaving || isDeleting || !hasActiveDatabase"
             />
           </div>
@@ -108,6 +140,7 @@
 import { computed, ref, watch } from 'vue'
 import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import {
   Drawer,
@@ -120,7 +153,9 @@ import {
 import {
   createTimesheet,
   deleteTimesheet,
+  listProjects,
   updateTimesheet,
+  type ProjectWithCustomer,
   type TimesheetEntry,
 } from '@/lib/database'
 import type { CalendarDay } from '@/lib/time'
@@ -135,6 +170,7 @@ import {
   parseTime,
 } from '@/lib/time'
 import CloseIcon from '@/icons/CloseIcon.vue'
+import { ui } from '@/lib/ui-classes'
 
 type SelectedSlot = {
   day: CalendarDay
@@ -157,6 +193,10 @@ const defaultDurationMinutes = 60
 const startTime = ref('')
 const endTime = ref('')
 const note = ref('')
+const selectedProjectId = ref('')
+const projects = ref<ProjectWithCustomer[]>([])
+const isLoadingProjects = ref(false)
+const projectsError = ref('')
 const isSaving = ref(false)
 const isDeleting = ref(false)
 const showDeleteConfirm = ref(false)
@@ -202,12 +242,18 @@ watch(
         ? formatTime(endDate)
         : addMinutesToTime(startTime.value, defaultDurationMinutes)
       note.value = entry.note ?? ''
+      selectedProjectId.value = entry.project_id ? String(entry.project_id) : ''
     } else {
       startTime.value = `${String(slot.hour).padStart(2, '0')}:00`
       endTime.value = addMinutesToTime(startTime.value, defaultDurationMinutes)
       note.value = ''
+      selectedProjectId.value = ''
     }
     saveError.value = ''
+
+    if (props.hasActiveDatabase) {
+      loadProjects()
+    }
   },
 )
 
@@ -252,10 +298,12 @@ async function handleSave() {
   saveError.value = ''
 
   try {
+    const projectId = parseProjectId()
     const payload = {
       time_from: formatLocalDateTime(startDate),
       time_to: endDate ? formatLocalDateTime(endDate) : null,
       note: note.value.trim() || null,
+      project_id: projectId,
     }
 
     if (props.existingEntry) {
@@ -302,6 +350,38 @@ async function handleDelete() {
   } finally {
     isDeleting.value = false
   }
+}
+
+async function loadProjects() {
+  if (!props.hasActiveDatabase) {
+    projects.value = []
+    projectsError.value = ''
+    return
+  }
+
+  isLoadingProjects.value = true
+  projectsError.value = ''
+
+  try {
+    projects.value = await listProjects()
+  } catch (error) {
+    projectsError.value = toErrorMessage(error)
+  } finally {
+    isLoadingProjects.value = false
+  }
+}
+
+function parseProjectId() {
+  if (!selectedProjectId.value) {
+    return null
+  }
+
+  const value = Number.parseInt(selectedProjectId.value, 10)
+  if (!Number.isFinite(value) || value <= 0) {
+    throw new Error('Seleziona un progetto valido.')
+  }
+
+  return value
 }
 
 function toErrorMessage(error: unknown) {

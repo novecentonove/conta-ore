@@ -1,21 +1,21 @@
 <template>
   <InnerPage>
-  <section class="space-y-12">
+    <section :class="ui.pageSection">
     <div>
-      <p class="text-xs font-medium uppercase tracking-[0.24em] text-white/45">
+      <p :class="ui.pageKicker">
         Settings
       </p>
-      <h1 class="mt-2 text-3xl font-semibold tracking-tight text-white">
+      <h1 :class="ui.pageTitle">
         Database
       </h1>
-      <p class="mt-3 text-sm leading-6 text-white/60">
+      <p :class="ui.pageSubtitle">
         Seleziona un database esistente oppure crea un nuovo file SQLite
       </p>
     </div>
 
-    <div class="space-y-12">
-      <div class="space-y-3 p-6 border border-white/90 max-w-2xl rounded">
-        <p class="text-xs font-medium uppercase tracking-[0.24em] text-white/45">
+    <div :class="ui.pageSection">
+      <div :class="ui.sectionCard">
+        <p :class="ui.pageKicker">
           Database
         </p>
         <p class="mt-3 text-sm text-white/60">
@@ -29,11 +29,11 @@
         </Button>
       </div>
 
-      <div class="space-y-3">
-        <p class="text-xs font-medium uppercase tracking-[0.24em] text-white/45">
+      <div :class="ui.section">
+        <p :class="ui.pageKicker">
           Seleziona Database
         </p>
-        <p class="mt-3 text-sm leading-6 text-white/60">
+        <p :class="ui.pageSubtitle">
           Scegli un file SQLite gia' esistente e impostalo come database attivo.
         </p>
         <Button 
@@ -45,11 +45,11 @@
         </Button>
       </div>
 
-      <div class="space-y-3">
-        <p class="text-xs font-medium uppercase tracking-[0.24em] text-white/45">
+      <div :class="ui.section">
+        <p :class="ui.pageKicker">
           Crea Database
         </p>
-        <p class="mt-3 text-sm leading-6 text-white/60">
+        <p :class="ui.pageSubtitle">
           Crea un nuovo file SQLite: verra' attivato automaticamente.
         </p>
         <div class="space-y-3 mt-5 gap-3 max-w-2xl">
@@ -75,7 +75,7 @@
         {{ errorMessage }}
       </p>
     </div>
-  </section>
+    </section>
   </InnerPage>
 </template>
 
@@ -91,6 +91,7 @@ import {
 } from '@/lib/database'
 import InnerPage from '@/components/layout/innerPage.vue'
 import Button from '@/components/ui/button/Button.vue'
+import { ui } from '@/lib/ui-classes'
 
 const defaultBaseDir = '/home'
 const storageDir = ref(defaultBaseDir)

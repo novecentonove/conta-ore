@@ -31,6 +31,24 @@
         </RouterLink>
 
         <RouterLink
+          to="/clients"
+          class="flex h-11 items-center rounded-2xl px-4 text-sm font-medium text-white/70 transition hover:bg-white/8 hover:text-white"
+          active-class="bg-white/10 text-white"
+          @click="$emit('close')"
+        >
+          Clienti
+        </RouterLink>
+
+        <RouterLink
+          to="/projects"
+          class="flex h-11 items-center rounded-2xl px-4 text-sm font-medium text-white/70 transition hover:bg-white/8 hover:text-white"
+          active-class="bg-white/10 text-white"
+          @click="$emit('close')"
+        >
+          Progetti
+        </RouterLink>
+
+        <RouterLink
           to="/settings"
           class="flex h-11 items-center rounded-2xl px-4 text-sm font-medium text-white/70 transition hover:bg-white/8 hover:text-white"
           active-class="bg-white/10 text-white"
