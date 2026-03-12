@@ -1,5 +1,5 @@
 <template>
-  <Drawer :open="open" @update:open="emit('update:open', $event)">
+  <Drawer :open="open" handle-only @update:open="emit('update:open', $event)">
     <DrawerContent class="bg-[#1E1E28] px-16">
       <div class="flex justify-between items-start">
 

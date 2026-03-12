@@ -24,11 +24,21 @@
         <div :style="rowHeaderStyle" class="flex justify-center items-center">
           <div>
             <div class="px-3 flex items-center space-x-2">
-              <span class="text-right w-6 text-sm font-semibold text-white tabular-nums">
+              <span
+                :class="[
+                  'text-right w-6 text-sm font-semibold text-white tabular-nums',
+                  isWeekend(day.iso) ? 'opacity-50' : '',
+                ]"
+              >
                 {{ day.dayNumber }}
               </span>
 
-              <span class="w-10 text-left text-xs font-semibold uppercase text-white/45">
+              <span
+                :class="[
+                  'w-10 text-left text-xs font-semibold uppercase text-white/45',
+                  isWeekend(day.iso) ? 'opacity-50' : '',
+                ]"
+              >
                 {{ day.weekdayLabel }}
               </span>
 
@@ -44,7 +54,10 @@
           v-for="hour in hours"
           :key="`${day.iso}-${hour}`"
           type="button"
-          class="relative bg-[#20202A] px-3 py-1 text-left transition hover:bg-[#2A2A38] focus:outline-none focus:ring-2 focus:ring-white/20"
+          :class="[
+            'relative bg-[#20202A] px-3 py-1 text-left transition hover:bg-[#2A2A38] focus:outline-none focus:ring-2 focus:ring-white/20',
+            isWeekend(day.iso) ? 'opacity-50' : '',
+          ]"
           :style="cellStyle"
           @click="emit('select-slot', day, hour)"
         >
@@ -131,9 +144,15 @@ function segmentStyle(segment: SlotSegment) {
 function segmentClass(segment: SlotSegment) {
   return [
     'absolute inset-y-0',
-    segment.isStart ? 'rounded-l-sm' : '',
-    segment.isEnd ? 'rounded-r-sm' : '',
-    segment.isStart && segment.isEnd ? 'rounded-sm' : '',
+    segment.isStart ? 'rounded-l-[2px]' : '',
+    segment.isEnd ? 'rounded-r-[2px]' : '',
+    segment.isStart && segment.isEnd ? 'rounded-[2px]' : '',
   ]
+}
+
+function isWeekend(dayIso: string) {
+  const date = new Date(`${dayIso}T00:00:00`)
+  const dayOfWeek = date.getDay()
+  return dayOfWeek === 0 || dayOfWeek === 6
 }
 </script>
