@@ -1,7 +1,7 @@
 <template>
-  <div class="flex-1 min-h-0 min-w-0 overflow-scroll">
+  <div class="flex-1 min-h-0 min-w-0 overflow-x-auto overflow-y-auto">
     <div
-      class="grid w-max gap-px rounded"
+      class="grid w-full min-w-max gap-px rounded"
       :style="gridTemplateColumns"
     >
       <div

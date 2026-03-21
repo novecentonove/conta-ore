@@ -70,7 +70,7 @@ import { computed, ref, watch } from 'vue'
 const dailyStartingHour = 9
 const dailyFinishingHour = 19
 const cellHeight = '20px'
-const cellWidth = '100px'
+const cellMinWidth = '72px'
 const dayHeaderWidth = '128px'
 const defaultTimesheetColor = ref(DEFAULT_TIMESHEET_COLOR)
 const timesheetFillColor = computed(() => toRgba(defaultTimesheetColor.value, 0.35))
@@ -131,7 +131,7 @@ const daysInMonth = computed(() => {
 const hasActiveDatabase = computed(() => Boolean(activeDatabaseName.value))
 
 const gridTemplateColumns = computed(() => ({
-  gridTemplateColumns: `${dayHeaderWidth} repeat(${hours.value.length}, ${cellWidth})`,
+  gridTemplateColumns: `${dayHeaderWidth} repeat(${hours.value.length}, minmax(${cellMinWidth}, 1fr))`,
 }))
 
 const cornerHeaderStyle = computed(() => ({
@@ -147,8 +147,7 @@ const columnHeaderStyle = computed(() => ({
   maxHeight: cellHeight,
   boxSizing: 'border-box',
   overflow: 'hidden',
-  minWidth: cellWidth,
-  maxWidth: cellWidth,
+  minWidth: cellMinWidth,
 }))
 
 const rowHeaderStyle = computed(() => ({
@@ -164,8 +163,7 @@ const cellStyle = computed(() => ({
   maxHeight: cellHeight,
   boxSizing: 'border-box',
   overflow: 'visible',
-  minWidth: cellWidth,
-  maxWidth: cellWidth,
+  minWidth: cellMinWidth,
 }))
 
 const timesheetSummary = computed(() => {
