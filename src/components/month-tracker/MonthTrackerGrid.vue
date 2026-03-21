@@ -55,11 +55,14 @@
           :key="`${day.iso}-${hour}`"
           type="button"
           :class="[
-            'relative bg-[#20202A] px-3 py-1 text-left transition hover:bg-[#2A2A38] focus:outline-none focus:ring-2 focus:ring-white/20',
+            'relative bg-[#20202A] px-3 py-1 text-left transition focus:outline-none focus:ring-2 focus:ring-white/20',
+            hasSegments(day.iso, hour) ? 'hover:bg-[#20202A]' : 'hover:bg-[#2A2A38]',
             isWeekend(day.iso) ? 'opacity-50' : '',
           ]"
           :style="cellStyle"
-          @click="emit('select-slot', day, hour)"
+          @click="handleCellClick($event, day, hour)"
+          @mousemove="handleCellMouseMove($event, day.iso, hour)"
+          @mouseleave="handleCellMouseLeave(day.iso, hour)"
         >
           <span class="sr-only">
             Registra ore per il {{ day.dayNumber }} {{ day.weekdayLabel }} alle {{ formatHour(hour) }}
@@ -70,6 +73,11 @@
               :key="`${day.iso}-${hour}-${segment.entryId}-${segment.startMinute}`"
               :class="segmentClass(segment)"
               :style="segmentStyle(segment)"
+            />
+            <span
+              v-if="isHoveredCell(day.iso, hour)"
+              :class="hoveredRangeClass()"
+              :style="hoveredRangeStyle()"
             />
           </div>
           <!-- <span
@@ -93,6 +101,7 @@
 
 <script setup lang="ts">
 import type { CalendarDay } from '@/lib/time'
+import { ref, type CSSProperties } from 'vue'
 import MonthTrackerGridFooter from './MonthTrackerGridFooter.vue'
 
 type SlotSegment = {
@@ -103,6 +112,12 @@ type SlotSegment = {
   isEnd: boolean
   fillColor?: string
   borderColor?: string
+}
+
+type SlotHit = {
+  startMinute: number
+  endMinute: number
+  entryId: number | null
 }
 
 const props = defineProps<{
@@ -123,10 +138,26 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  (event: 'select-slot', day: CalendarDay, hour: number): void
+  (
+    event: 'select-slot',
+    payload: {
+      day: CalendarDay
+      hour: number
+      startMinute: number
+      endMinute: number
+      entryId: number | null
+    },
+  ): void
 }>()
 
-function segmentStyle(segment: SlotSegment) {
+const hoveredRange = ref<{
+  cellKey: string
+  startMinute: number
+  endMinute: number
+  isEntry: boolean
+} | null>(null)
+
+function segmentStyle(segment: SlotSegment): CSSProperties {
   const widthMinutes = Math.max(0, segment.endMinute - segment.startMinute)
   const gapBleedPx = segment.isEnd ? 0 : 1
   const fillColor = segment.fillColor ?? props.timesheetFillColor
@@ -152,6 +183,163 @@ function segmentClass(segment: SlotSegment) {
     segment.isEnd ? 'rounded-r-[2px]' : '',
     segment.isStart && segment.isEnd ? 'rounded-[2px]' : '',
   ]
+}
+
+function slotCellKey(dayIso: string, hour: number) {
+  return `${dayIso}-${hour}`
+}
+
+function hasSegments(dayIso: string, hour: number) {
+  return props.getSlotSegments(dayIso, hour).length > 0
+}
+
+function getSortedSegments(dayIso: string, hour: number) {
+  return [...props.getSlotSegments(dayIso, hour)].sort((a, b) => (
+    a.startMinute - b.startMinute || a.endMinute - b.endMinute
+  ))
+}
+
+function clampMinute(minute: number) {
+  if (Number.isNaN(minute)) {
+    return 0
+  }
+  return Math.min(59, Math.max(0, minute))
+}
+
+function minuteFromPointer(event: MouseEvent, target: EventTarget | null) {
+  if (!(target instanceof HTMLElement)) {
+    return 0
+  }
+
+  const rect = target.getBoundingClientRect()
+  if (rect.width <= 0) {
+    return 0
+  }
+
+  const offsetX = event.clientX - rect.left
+  return clampMinute(Math.floor((offsetX / rect.width) * 60))
+}
+
+function getGapHit(dayIso: string, hour: number, minute: number): SlotHit {
+  const segments = getSortedSegments(dayIso, hour)
+  if (segments.length === 0) {
+    return { startMinute: 0, endMinute: 60, entryId: null }
+  }
+
+  const occupied: Array<{ startMinute: number; endMinute: number }> = []
+  for (const segment of segments) {
+    const rangeStart = Math.max(0, segment.startMinute)
+    const rangeEnd = Math.min(60, segment.endMinute)
+    if (rangeEnd <= rangeStart) {
+      continue
+    }
+
+    const lastRange = occupied[occupied.length - 1]
+    if (!lastRange || rangeStart > lastRange.endMinute) {
+      occupied.push({ startMinute: rangeStart, endMinute: rangeEnd })
+      continue
+    }
+
+    lastRange.endMinute = Math.max(lastRange.endMinute, rangeEnd)
+  }
+
+  const gaps: Array<{ startMinute: number; endMinute: number }> = []
+  let cursor = 0
+  for (const range of occupied) {
+    if (range.startMinute > cursor) {
+      gaps.push({ startMinute: cursor, endMinute: range.startMinute })
+    }
+    cursor = Math.max(cursor, range.endMinute)
+  }
+
+  if (cursor < 60) {
+    gaps.push({ startMinute: cursor, endMinute: 60 })
+  }
+
+  const hitGap = gaps.find((gap) => minute >= gap.startMinute && minute < gap.endMinute)
+  if (hitGap) {
+    return { ...hitGap, entryId: null }
+  }
+
+  const firstGap = gaps[0]
+  if (firstGap) {
+    return { ...firstGap, entryId: null }
+  }
+
+  return { startMinute: 0, endMinute: 60, entryId: null }
+}
+
+function resolveSlotHit(dayIso: string, hour: number, minute: number): SlotHit {
+  const segments = getSortedSegments(dayIso, hour)
+  const hitSegment = segments.find((segment) => (
+    minute >= segment.startMinute && minute < segment.endMinute
+  ))
+
+  if (hitSegment) {
+    return {
+      startMinute: hitSegment.startMinute,
+      endMinute: hitSegment.endMinute,
+      entryId: hitSegment.entryId,
+    }
+  }
+
+  return getGapHit(dayIso, hour, minute)
+}
+
+function handleCellClick(event: MouseEvent, day: CalendarDay, hour: number) {
+  const minute = minuteFromPointer(event, event.currentTarget)
+  const hit = resolveSlotHit(day.iso, hour, minute)
+  emit('select-slot', {
+    day,
+    hour,
+    startMinute: hit.startMinute,
+    endMinute: hit.endMinute,
+    entryId: hit.entryId,
+  })
+}
+
+function handleCellMouseMove(event: MouseEvent, dayIso: string, hour: number) {
+  if (!hasSegments(dayIso, hour)) {
+    hoveredRange.value = null
+    return
+  }
+
+  const minute = minuteFromPointer(event, event.currentTarget)
+  const hit = resolveSlotHit(dayIso, hour, minute)
+  hoveredRange.value = {
+    cellKey: slotCellKey(dayIso, hour),
+    startMinute: hit.startMinute,
+    endMinute: hit.endMinute,
+    isEntry: hit.entryId !== null,
+  }
+}
+
+function handleCellMouseLeave(dayIso: string, hour: number) {
+  if (hoveredRange.value?.cellKey === slotCellKey(dayIso, hour)) {
+    hoveredRange.value = null
+  }
+}
+
+function isHoveredCell(dayIso: string, hour: number) {
+  return hoveredRange.value?.cellKey === slotCellKey(dayIso, hour)
+}
+
+function hoveredRangeClass() {
+  return [
+    'absolute inset-y-0',
+    hoveredRange.value?.isEntry ? 'bg-white/15' : 'bg-white/8',
+  ]
+}
+
+function hoveredRangeStyle() {
+  if (!hoveredRange.value) {
+    return {}
+  }
+
+  return {
+    left: `${(hoveredRange.value.startMinute / 60) * 100}%`,
+    width: `${((hoveredRange.value.endMinute - hoveredRange.value.startMinute) / 60) * 100}%`,
+  }
 }
 
 function isWeekend(dayIso: string) {

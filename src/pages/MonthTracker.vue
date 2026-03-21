@@ -81,6 +81,8 @@ const isDrawerOpen = ref(false)
 const selectedSlot = ref<{
   day: CalendarDay
   hour: number
+  startMinute?: number
+  endMinute?: number
 } | null>(null)
 const selectedEntry = ref<TimesheetEntry | null>(null)
 const timesheets = ref<TimesheetEntry[]>([])
@@ -246,6 +248,14 @@ type SlotSegment = {
   borderColor: string
 }
 
+type SlotSelectionPayload = {
+  day: CalendarDay
+  hour: number
+  startMinute: number
+  endMinute: number
+  entryId: number | null
+}
+
 const segmentsBySlot = computed(() => {
   const map = new Map<string, SlotSegment[]>()
 
@@ -304,24 +314,6 @@ const segmentsBySlot = computed(() => {
   return map
 })
 
-const entryBySlot = computed(() => {
-  const map = new Map<string, TimesheetEntry>()
-
-  for (const entry of timesheets.value) {
-    const key = slotKeyFromTime(entry.time_from)
-    if (!key) {
-      continue
-    }
-
-    const current = map.get(key)
-    if (!current || entry.time_from > current.time_from) {
-      map.set(key, entry)
-    }
-  }
-
-  return map
-})
-
 const entryById = computed(() => {
   const map = new Map<number, TimesheetEntry>()
 
@@ -352,34 +344,17 @@ function startOfMonth(date: Date) {
   return new Date(date.getFullYear(), date.getMonth(), 1)
 }
 
-function openDrawer(
-  day: CalendarDay,
-  hour: number,
-) {
-  const entryKey = slotKey(day.iso, hour)
-  const segments = segmentsBySlot.value.get(entryKey) ?? []
-  let entry: TimesheetEntry | null = null
+function openDrawer(payload: SlotSelectionPayload) {
+  const {
+    day,
+    hour,
+    startMinute,
+    endMinute,
+    entryId,
+  } = payload
 
-  if (segments.length > 0) {
-    const seen = new Set<number>()
-    for (const segment of segments) {
-      if (seen.has(segment.entryId)) {
-        continue
-      }
-      seen.add(segment.entryId)
-      const candidate = entryById.value.get(segment.entryId)
-      if (!candidate) {
-        continue
-      }
-
-      if (!entry || candidate.time_from < entry.time_from) {
-        entry = candidate
-      }
-    }
-  }
-
-  selectedSlot.value = { day, hour }
-  selectedEntry.value = entry ?? entryBySlot.value.get(entryKey) ?? null
+  selectedSlot.value = { day, hour, startMinute, endMinute }
+  selectedEntry.value = entryId !== null ? entryById.value.get(entryId) ?? null : null
   isDrawerOpen.value = true
 }
 

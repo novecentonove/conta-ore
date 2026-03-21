@@ -175,6 +175,8 @@ import { ui } from '@/lib/ui-classes'
 type SelectedSlot = {
   day: CalendarDay
   hour: number
+  startMinute?: number
+  endMinute?: number
 }
 
 const props = defineProps<{
@@ -214,8 +216,18 @@ const selectedSlotLabel = computed(() => {
     return 'Seleziona una cella per inserire l\'orario.'
   }
 
-  const { day, hour } = props.selectedSlot
-  return `${day.dayNumber} ${day.weekdayLabel} • ${formatHour(hour)}`
+  const { day, hour, startMinute, endMinute } = props.selectedSlot
+  const hasRange = (
+    typeof startMinute === 'number'
+    && typeof endMinute === 'number'
+    && endMinute > startMinute
+  )
+
+  if (!hasRange) {
+    return `${day.dayNumber} ${day.weekdayLabel} • ${formatHour(hour)}`
+  }
+
+  return `${day.dayNumber} ${day.weekdayLabel} • ${formatTimeFromHourMinute(hour, startMinute)}-${formatTimeFromHourMinute(hour, endMinute)}`
 })
 
 const canSave = computed(() =>
@@ -244,8 +256,12 @@ watch(
       note.value = entry.note ?? ''
       selectedProjectId.value = entry.project_id ? String(entry.project_id) : ''
     } else {
-      startTime.value = `${String(slot.hour).padStart(2, '0')}:00`
-      endTime.value = addMinutesToTime(startTime.value, defaultDurationMinutes)
+      const rangeStartMinute = normalizeMinute(slot.startMinute, 0)
+      const rangeEndMinute = normalizeMinute(slot.endMinute, 60)
+      startTime.value = formatTimeFromHourMinute(slot.hour, rangeStartMinute)
+      endTime.value = rangeEndMinute > rangeStartMinute
+        ? formatTimeFromHourMinute(slot.hour, rangeEndMinute)
+        : addMinutesToTime(startTime.value, defaultDurationMinutes)
       note.value = ''
       selectedProjectId.value = ''
     }
@@ -256,6 +272,20 @@ watch(
     }
   },
 )
+
+function normalizeMinute(value: number | undefined, fallback: number) {
+  if (typeof value !== 'number' || Number.isNaN(value)) {
+    return fallback
+  }
+
+  return Math.max(0, Math.min(60, Math.floor(value)))
+}
+
+function formatTimeFromHourMinute(hour: number, minute: number) {
+  const date = new Date(0, 0, 0, hour, 0)
+  date.setMinutes(normalizeMinute(minute, 0))
+  return formatTime(date)
+}
 
 async function handleSave() {
   if (!props.selectedSlot) {
