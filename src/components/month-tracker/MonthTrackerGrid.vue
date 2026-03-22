@@ -102,18 +102,33 @@
       </div>
     </div>
 
-    <div class="ml-2 flex shrink-0 items-start pt-1">
-      <button
-        type="button"
-        class="-mt-1 flex h-5 w-5 items-center justify-center rounded border border-white/20 bg-white/10 text-white/70 transition hover:border-white/35 hover:bg-white/20 hover:text-white"
-        :aria-label="hourRangeToggleTitle()"
-        :aria-pressed="props.isExtendedHourRange"
-        :title="hourRangeToggleTitle()"
-        @click="handleHourRangeToggle"
+    <div class="ml-2 flex shrink-0 flex-col items-center">
+      <div class="flex items-center justify-center" :style="rightHeaderStyle()">
+        <button
+          type="button"
+          class="flex h-5 w-5 items-center justify-center rounded border border-white/20 bg-white/10 text-white/70 transition hover:border-white/35 hover:bg-white/20 hover:text-white"
+          :aria-label="hourRangeToggleTitle()"
+          :aria-pressed="props.isExtendedHourRange"
+          :title="hourRangeToggleTitle()"
+          @click="handleHourRangeToggle"
+        >
+          <ChevronRight v-if="!props.isExtendedHourRange" class="h-3.5 w-3.5" />
+          <ChevronLeft v-else class="h-3.5 w-3.5" />
+        </button>
+      </div>
+
+      <div
+        v-for="day in days"
+        :key="`right-indicator-${day.iso}`"
+        class="flex items-center justify-center"
+        :style="rightRowStyle()"
       >
-        <ChevronRight v-if="!props.isExtendedHourRange" class="h-3.5 w-3.5" />
-        <ChevronLeft v-else class="h-3.5 w-3.5" />
-      </button>
+        <span
+          v-if="hasHiddenTrackedHours(day.iso)"
+          class="h-2 w-2 rounded-full bg-zinc-400/90"
+          title="Ore registrate oltre l'orario visibile"
+        />
+      </div>
     </div>
   </div>
 </template>
@@ -143,6 +158,8 @@ type SlotHit = {
 const props = defineProps<{
   days: CalendarDay[]
   hours: number[]
+  baseFinishingHour: number
+  extendedFinishingHour: number
   isExtendedHourRange: boolean
   gridTemplateColumns: Record<string, string>
   cornerHeaderStyle: Record<string, string | number>
@@ -215,6 +232,36 @@ function hourRangeToggleTitle() {
 
 function handleHourRangeToggle() {
   emit('toggle-hour-range', !props.isExtendedHourRange)
+}
+
+function rightHeaderStyle() {
+  return {
+    minHeight: props.columnHeaderStyle.minHeight,
+    height: props.columnHeaderStyle.height,
+    maxHeight: props.columnHeaderStyle.maxHeight,
+  }
+}
+
+function rightRowStyle() {
+  return {
+    minHeight: props.cellStyle.minHeight,
+    height: props.cellStyle.height,
+    maxHeight: props.cellStyle.maxHeight,
+  }
+}
+
+function hasHiddenTrackedHours(dayIso: string) {
+  if (props.isExtendedHourRange) {
+    return false
+  }
+
+  for (let hour = props.baseFinishingHour + 1; hour <= props.extendedFinishingHour; hour += 1) {
+    if (props.getSlotSegments(dayIso, hour).length > 0) {
+      return true
+    }
+  }
+
+  return false
 }
 
 function slotCellKey(dayIso: string, hour: number) {

@@ -10,6 +10,8 @@
       <MonthTrackerGrid
         :days="daysInMonth"
         :hours="hours"
+        :base-finishing-hour="dailyFinishingHour"
+        :extended-finishing-hour="extendedDailyFinishingHour"
         :is-extended-hour-range="isExtendedHourRange"
         :grid-template-columns="gridTemplateColumns"
         :corner-header-style="cornerHeaderStyle"
