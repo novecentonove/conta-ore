@@ -1,5 +1,5 @@
 <template>
-  <header class="flex items-center gap-4 ml-5 mb-2">
+  <header class="flex justify-between items-center gap-4 ml-5 mb-2">
     <div>
       <h1 class="font-semibold text-white">
         {{ monthLabel }}

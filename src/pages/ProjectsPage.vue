@@ -16,7 +16,7 @@
       <div class="space-y-8">
         <div :class="ui.section">
           <p :class="ui.pageKicker">
-            Colore tracciamenti senza progetto
+            Colore di default
           </p>
           <div class="flex items-center gap-3">
             <Input
@@ -95,14 +95,6 @@
                     @click="startEdit(project)"
                   >
                     Modifica
-                  </Button>
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    :disabled="isSaving || isDeleting"
-                    @click="requestDelete(project)"
-                  >
-                    Elimina
                   </Button>
                 </div>
               </div>
@@ -233,6 +225,16 @@
             >
               Annulla
             </Button>
+            <Button
+              v-if="editingProject"
+              variant="ghost"
+              size="sm"
+              :disabled="isSaving || isDeleting"
+              class="ml-auto text-gray-600"
+              @click="requestDelete(editingProject)"
+            >
+              Elimina
+            </Button>
           </div>
 
           <p v-if="saveError" class="text-sm text-rose-300">
@@ -304,6 +306,13 @@ const defaultColorError = ref('')
 const hasActiveDatabase = computed(() => Boolean(activeDatabaseName.value))
 const hasCustomers = computed(() => customers.value.length > 0)
 const showForm = computed(() => isCreating.value || editingProjectId.value !== null)
+const editingProject = computed(() => {
+  if (editingProjectId.value === null) {
+    return null
+  }
+
+  return projects.value.find((project) => project.id === editingProjectId.value) ?? null
+})
 const submitLabel = computed(() => (
   editingProjectId.value ? 'Aggiorna progetto' : 'Crea progetto'
 ))

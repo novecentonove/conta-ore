@@ -65,14 +65,6 @@
                   >
                     Modifica
                   </Button>
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    :disabled="isSaving || isDeleting"
-                    @click="requestDelete(customer)"
-                  >
-                    Elimina
-                  </Button>
                 </div>
               </div>
               <div class="flex flex-wrap gap-3 text-xs text-white/45">
@@ -147,6 +139,16 @@
             >
               Annulla
             </Button>
+            <Button
+              v-if="editingCustomer"
+              variant="ghost"
+              size="sm"
+              :disabled="isSaving || isDeleting"
+              class="ml-auto text-gray-600"
+              @click="requestDelete(editingCustomer)"
+            >
+              Elimina
+            </Button>
           </div>
 
           <p v-if="saveError" class="text-sm text-rose-300">
@@ -204,6 +206,13 @@ const formHourlyRate = ref<string | number>('')
 
 const hasActiveDatabase = computed(() => Boolean(activeDatabaseName.value))
 const showForm = computed(() => isCreating.value || editingCustomerId.value !== null)
+const editingCustomer = computed(() => {
+  if (editingCustomerId.value === null) {
+    return null
+  }
+
+  return customers.value.find((customer) => customer.id === editingCustomerId.value) ?? null
+})
 const submitLabel = computed(() => (
   editingCustomerId.value ? 'Aggiorna cliente' : 'Crea cliente'
 ))
