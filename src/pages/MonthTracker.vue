@@ -10,6 +10,7 @@
       <MonthTrackerGrid
         :days="daysInMonth"
         :hours="hours"
+        :is-extended-hour-range="isExtendedHourRange"
         :grid-template-columns="gridTemplateColumns"
         :corner-header-style="cornerHeaderStyle"
         :column-header-style="columnHeaderStyle"
@@ -23,6 +24,7 @@
         :timesheet-fill-color="timesheetFillColor"
         :timesheet-border-color="timesheetBorderColor"
         @select-slot="openDrawer"
+        @toggle-hour-range="handleToggleHourRange"
       />
 
       <p v-if="isLoadingTimesheets" class="text-xs text-white/45">
@@ -69,12 +71,14 @@ import { computed, ref, watch } from 'vue'
 
 const dailyStartingHour = 9
 const dailyFinishingHour = 19
+const extendedDailyFinishingHour = 23
 const cellHeight = '20px'
 const cellMinWidth = '72px'
 const dayHeaderWidth = '128px'
 const defaultTimesheetColor = ref(DEFAULT_TIMESHEET_COLOR)
 const timesheetFillColor = computed(() => toRgba(defaultTimesheetColor.value, 0.35))
 const timesheetBorderColor = computed(() => toRgba(defaultTimesheetColor.value, 0.8))
+const isExtendedHourRange = ref(false)
 
 const selectedMonth = ref(startOfMonth(new Date()))
 const isDrawerOpen = ref(false)
@@ -105,7 +109,13 @@ const monthLabel = computed(() => {
 
 const hours = computed(() =>
   Array.from(
-    { length: dailyFinishingHour - dailyStartingHour + 1 },
+    {
+      length: (
+        (isExtendedHourRange.value ? extendedDailyFinishingHour : dailyFinishingHour)
+        - dailyStartingHour
+        + 1
+      ),
+    },
     (_, index) => dailyStartingHour + index,
   ),
 )
@@ -336,6 +346,10 @@ function goToNextMonth() {
     selectedMonth.value.getMonth() + 1,
     1,
   )
+}
+
+function handleToggleHourRange(nextValue: boolean) {
+  isExtendedHourRange.value = nextValue
 }
 
 function startOfMonth(date: Date) {

@@ -1,80 +1,88 @@
 <template>
   <InnerPage>
+
+    <p :class="ui.pageKicker" class="mb-6">
+      Impostazioni
+    </p>
+
+    <hr>
+
     <section :class="ui.pageSection">
-    <div>
-      <p :class="ui.pageKicker">
-        Settings
-      </p>
-      <h1 :class="ui.pageTitle">
-        Database
-      </h1>
-      <p :class="ui.pageSubtitle">
-        Seleziona un database esistente oppure crea un nuovo file SQLite
-      </p>
-    </div>
-
-    <div :class="ui.pageSection">
-      <div :class="ui.sectionCard">
-        <p :class="ui.pageKicker">
-          Database
-        </p>
-        <p class="mt-3 text-sm text-white/60">
-          {{ activeDatabaseName ?? 'Nessun database selezionato' }}
-        </p>
-        <Button
-          :disabled="isBusy || !activeDatabaseName"
-          @click="handleDetachDatabase"
-        >
-          {{ isBusy ? 'Attendi...' : 'Sgancia database' }}
-        </Button>
-      </div>
-
-      <div :class="ui.section">
-        <p :class="ui.pageKicker">
-          Seleziona Database
-        </p>
-        <p :class="ui.pageSubtitle">
-          Scegli un file SQLite gia' esistente e impostalo come database attivo.
-        </p>
-        <Button 
-          variant="secondary"
-          :disabled="isBusy || activeDatabaseName !== null"
-          @click="handleSelectDatabase"
-        >
-          {{ isBusy ? 'Attendi...' : 'Seleziona database' }}
-        </Button>
-      </div>
-
-      <div :class="ui.section">
-        <p :class="ui.pageKicker">
-          Crea Database
-        </p>
-        <p :class="ui.pageSubtitle">
-          Crea un nuovo file SQLite: verra' attivato automaticamente.
-        </p>
-        <div class="space-y-3 mt-5 gap-3 max-w-2xl">
-          <Button
-            variant="secondary"
-            :disabled="isBusy || activeDatabaseName !== null"
-            @click="handleCreateDatabase"
-          >
-            {{ isBusy ? 'Attendi...' : 'Crea database' }}
-          </Button>
-          <p class="break-all text-xs leading-6 text-white/45">
-            {{ storageDir ? `Predefinito: ${storageDir}` : 'Caricamento percorso...' }}
+      
+      <!-- database -->
+      <div>
+        <div>
+          <h1 :class="ui.pageTitle">
+            Database
+          </h1>
+          <p :class="ui.pageSubtitle">
+            Seleziona un database esistente oppure crea un nuovo file SQLite
           </p>
         </div>
-      </div>
-    </div>
 
-    <div>
-      <p v-if="statusMessage" class="text-sm text-emerald-300">
-        {{ statusMessage }}
-      </p>
-      <p v-if="errorMessage" class="mt-3 text-sm text-rose-300">
-        {{ errorMessage }}
-      </p>
-    </div>
+        <div :class="ui.pageSection">
+          <div :class="ui.sectionCard">
+            <p :class="ui.pageKicker">
+              Database
+            </p>
+            <p class="mt-3 text-sm text-white/60">
+              {{ activeDatabaseName ?? 'Nessun database selezionato' }}
+            </p>
+            <Button
+              :disabled="isBusy || !activeDatabaseName"
+              @click="handleDetachDatabase"
+            >
+              {{ isBusy ? 'Attendi...' : 'Sgancia database' }}
+            </Button>
+          </div>
+
+          <div :class="ui.section">
+            <p :class="ui.pageKicker">
+              Seleziona Database
+            </p>
+            <p :class="ui.pageSubtitle">
+              Scegli un file SQLite gia' esistente e impostalo come database attivo.
+            </p>
+            <Button 
+              variant="secondary"
+              :disabled="isBusy || activeDatabaseName !== null"
+              @click="handleSelectDatabase"
+            >
+              {{ isBusy ? 'Attendi...' : 'Seleziona database' }}
+            </Button>
+          </div>
+
+          <div :class="ui.section">
+            <p :class="ui.pageKicker">
+              Crea Database
+            </p>
+            <p :class="ui.pageSubtitle">
+              Crea un nuovo file SQLite: verra' attivato automaticamente.
+            </p>
+            <div class="space-y-3 mt-5 gap-3 max-w-2xl">
+              <Button
+                variant="secondary"
+                :disabled="isBusy || activeDatabaseName !== null"
+                @click="handleCreateDatabase"
+              >
+                {{ isBusy ? 'Attendi...' : 'Crea database' }}
+              </Button>
+              <p class="break-all text-xs leading-6 text-white/45">
+                {{ storageDir ? `Predefinito: ${storageDir}` : 'Caricamento percorso...' }}
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <p v-if="statusMessage" class="text-sm text-emerald-300">
+          {{ statusMessage }}
+        </p>
+        <p v-if="errorMessage" class="mt-3 text-sm text-rose-300">
+          {{ errorMessage }}
+        </p>
+      </div>
     </section>
   </InnerPage>
 </template>

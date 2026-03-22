@@ -1,100 +1,119 @@
 <template>
-  <div class="flex-1 min-h-0 min-w-0 overflow-x-auto overflow-y-auto">
+  <div class="flex min-h-0 flex-1 min-w-0">
     <div
-      class="grid w-full min-w-max gap-px rounded"
-      :style="gridTemplateColumns"
+      class="min-h-0 min-w-0 flex-1"
+      :class="props.isExtendedHourRange ? 'overflow-x-auto overflow-y-auto' : 'overflow-hidden'"
     >
       <div
-        class="left-0 top-0 z-30 flex items-end px-4 pb-3 text-xs font-semibold uppercase text-white/35"
-        :style="cornerHeaderStyle"
-      />
-
-      <div
-        v-for="hour in hours"
-        :key="`hour-${hour}`"
-        class="top-0 z-20 flex items-end px-1 pb-1 text-left"
-        :style="columnHeaderStyle"
+        class="grid w-full min-w-max gap-px rounded"
+        :style="gridTemplateColumns"
       >
-        <span class="mt-2 text-xs font-semibold leading-none text-white">
-          {{ formatHour(hour) }}
-        </span>
-      </div>
+        <div
+          class="left-0 top-0 z-30 flex items-end px-4 pb-3 text-xs font-semibold uppercase text-white/35"
+          :style="cornerHeaderStyle"
+        />
 
-      <template v-for="day in days" :key="`row-${day.iso}`">
-        <div :style="rowHeaderStyle" class="flex justify-center items-center">
-          <div>
-            <div class="px-3 flex items-center space-x-2">
-              <span
-                :class="[
-                  'text-right w-6 text-sm font-semibold text-white tabular-nums',
-                  isWeekend(day.iso) ? 'opacity-50' : '',
-                ]"
-              >
-                {{ day.dayNumber }}
-              </span>
-
-              <span
-                :class="[
-                  'w-10 text-left text-xs font-semibold uppercase text-white/45',
-                  isWeekend(day.iso) ? 'opacity-50' : '',
-                ]"
-              >
-                {{ day.weekdayLabel }}
-              </span>
-
-              <div class="w-12 text-[12px] text-white/60 tabular-nums">
-                {{ getDayTotalLabel(day.iso) }}
-              </div>
-
-            </div>
-          </div>
+        <div
+          v-for="hour in hours"
+          :key="`hour-${hour}`"
+          class="top-0 z-20 flex items-end px-1 pb-1 text-left"
+          :style="columnHeaderStyle"
+        >
+          <span class="mt-2 text-xs font-semibold leading-none text-white">
+            {{ formatHour(hour) }}
+          </span>
         </div>
 
-        <button
-          v-for="hour in hours"
-          :key="`${day.iso}-${hour}`"
-          type="button"
-          :class="[
-            'relative bg-[#20202A] px-3 py-1 text-left transition focus:outline-none focus:ring-2 focus:ring-white/20',
-            hasSegments(day.iso, hour) ? 'hover:bg-[#20202A]' : 'hover:bg-[#2A2A38]',
-            isWeekend(day.iso) ? 'opacity-50' : '',
-          ]"
-          :style="cellStyle"
-          @click="handleCellClick($event, day, hour)"
-          @mousemove="handleCellMouseMove($event, day.iso, hour)"
-          @mouseleave="handleCellMouseLeave(day.iso, hour)"
-        >
-          <span class="sr-only">
-            Registra ore per il {{ day.dayNumber }} {{ day.weekdayLabel }} alle {{ formatHour(hour) }}
-          </span>
-          <div class="pointer-events-none absolute inset-0">
-            <span
-              v-for="segment in getSlotSegments(day.iso, hour)"
-              :key="`${day.iso}-${hour}-${segment.entryId}-${segment.startMinute}`"
-              :class="segmentClass(segment)"
-              :style="segmentStyle(segment)"
-            />
-            <span
-              v-if="isHoveredCell(day.iso, hour)"
-              :class="hoveredRangeClass()"
-              :style="hoveredRangeStyle()"
-            />
-          </div>
-          <!-- <span
-            v-if="getSlotSummary(day.iso, hour)"
-            class="relative z-10 text-[10px] font-semibold text-white/80"
-          >
-            {{ getSlotSummary(day.iso, hour) }}
-          </span> -->
-        </button>
-      </template>
+        <template v-for="day in days" :key="`row-${day.iso}`">
+          <div :style="rowHeaderStyle" class="flex justify-center items-center">
+            <div>
+              <div class="px-3 flex items-center space-x-2">
+                <span
+                  :class="[
+                    'text-right w-6 text-sm font-semibold text-white tabular-nums',
+                    isWeekend(day.iso) ? 'opacity-50' : '',
+                  ]"
+                >
+                  {{ day.dayNumber }}
+                </span>
 
-      <MonthTrackerGridFooter
-        :hours="hours"
-        :row-header-style="rowHeaderStyle"
-        :cell-style="cellStyle"
-        :total-label="monthTotalLabel"
-      />
+                <span
+                  :class="[
+                    'w-10 text-left text-xs font-semibold uppercase text-white/45',
+                    isWeekend(day.iso) ? 'opacity-50' : '',
+                  ]"
+                >
+                  {{ day.weekdayLabel }}
+                </span>
+
+                <div class="w-12 text-[12px] text-white/60 tabular-nums">
+                  {{ getDayTotalLabel(day.iso) }}
+                </div>
+
+              </div>
+            </div>
+          </div>
+
+          <button
+            v-for="hour in hours"
+            :key="`${day.iso}-${hour}`"
+            type="button"
+            :class="[
+              'relative bg-[#20202A] px-3 py-1 text-left transition focus:outline-none focus:ring-2 focus:ring-white/20',
+              hasSegments(day.iso, hour) ? 'hover:bg-[#20202A]' : 'hover:bg-[#2A2A38]',
+              isWeekend(day.iso) ? 'opacity-50' : '',
+            ]"
+            :style="cellStyle"
+            @click="handleCellClick($event, day, hour)"
+            @mousemove="handleCellMouseMove($event, day.iso, hour)"
+            @mouseleave="handleCellMouseLeave(day.iso, hour)"
+          >
+            <span class="sr-only">
+              Registra ore per il {{ day.dayNumber }} {{ day.weekdayLabel }} alle {{ formatHour(hour) }}
+            </span>
+            <div class="pointer-events-none absolute inset-0">
+              <span
+                v-for="segment in getSlotSegments(day.iso, hour)"
+                :key="`${day.iso}-${hour}-${segment.entryId}-${segment.startMinute}`"
+                :class="segmentClass(segment)"
+                :style="segmentStyle(segment)"
+              />
+              <span
+                v-if="isHoveredCell(day.iso, hour)"
+                :class="hoveredRangeClass()"
+                :style="hoveredRangeStyle()"
+              />
+            </div>
+            <!-- <span
+              v-if="getSlotSummary(day.iso, hour)"
+              class="relative z-10 text-[10px] font-semibold text-white/80"
+            >
+              {{ getSlotSummary(day.iso, hour) }}
+            </span> -->
+          </button>
+        </template>
+
+        <MonthTrackerGridFooter
+          :hours="hours"
+          :row-header-style="rowHeaderStyle"
+          :cell-style="cellStyle"
+          :total-label="monthTotalLabel"
+        />
+      </div>
+    </div>
+
+    <div class="ml-2 flex shrink-0 items-start pt-1">
+      <button
+        type="button"
+        class="-mt-1 flex h-5 w-5 items-center justify-center rounded border border-white/20 bg-white/10 text-white/70 transition hover:border-white/35 hover:bg-white/20 hover:text-white"
+        :aria-label="hourRangeToggleTitle()"
+        :aria-pressed="props.isExtendedHourRange"
+        :title="hourRangeToggleTitle()"
+        @click="handleHourRangeToggle"
+      >
+        <ChevronRight v-if="!props.isExtendedHourRange" class="h-3.5 w-3.5" />
+        <ChevronLeft v-else class="h-3.5 w-3.5" />
+      </button>
     </div>
   </div>
 </template>
@@ -102,6 +121,7 @@
 <script setup lang="ts">
 import type { CalendarDay } from '@/lib/time'
 import { ref, type CSSProperties } from 'vue'
+import { ChevronLeft, ChevronRight } from 'lucide-vue-next'
 import MonthTrackerGridFooter from './MonthTrackerGridFooter.vue'
 
 type SlotSegment = {
@@ -123,6 +143,7 @@ type SlotHit = {
 const props = defineProps<{
   days: CalendarDay[]
   hours: number[]
+  isExtendedHourRange: boolean
   gridTemplateColumns: Record<string, string>
   cornerHeaderStyle: Record<string, string | number>
   columnHeaderStyle: Record<string, string | number>
@@ -148,6 +169,7 @@ const emit = defineEmits<{
       entryId: number | null
     },
   ): void
+  (event: 'toggle-hour-range', nextValue: boolean): void
 }>()
 
 const hoveredRange = ref<{
@@ -183,6 +205,16 @@ function segmentClass(segment: SlotSegment) {
     segment.isEnd ? 'rounded-r-[2px]' : '',
     segment.isStart && segment.isEnd ? 'rounded-[2px]' : '',
   ]
+}
+
+function hourRangeToggleTitle() {
+  return props.isExtendedHourRange
+    ? 'Mostra fino alle 19:00'
+    : 'Estendi fino alle 23:00'
+}
+
+function handleHourRangeToggle() {
+  emit('toggle-hour-range', !props.isExtendedHourRange)
 }
 
 function slotCellKey(dayIso: string, hour: number) {
