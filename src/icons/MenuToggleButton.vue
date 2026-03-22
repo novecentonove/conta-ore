@@ -1,7 +1,7 @@
 <template>
   <button
     type="button"
-    class="flex h-10 w-10 items-center justify-center rounded-2xl text-white/75 transition hover:text-white"
+    class="flex h-8 w-8 items-center justify-center rounded-2xl text-white/75 transition hover:text-white"
     :aria-label="isOpen ? 'Chiudi menu' : 'Apri menu'"
     @click="$emit('toggle')"
   >

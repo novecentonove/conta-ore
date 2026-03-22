@@ -44,4 +44,7 @@ CREATE TABLE settings (
 );
 
 INSERT INTO settings (key, value)
-VALUES ('default_timesheet_color', '#78aaff');
+VALUES
+  ('default_timesheet_color', '#78aaff'),
+  ('daily_starting_hour', '9'),
+  ('daily_finishing_hour', '19');
