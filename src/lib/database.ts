@@ -8,8 +8,6 @@ import initialMigration from '@/migrations/001_init.sql?raw'
 const ACTIVE_DATABASE_KEY = 'conta-ore.active-database'
 const SQLITE_FILE_PATTERN = /^[A-Za-z0-9._-]+$/
 export const DEFAULT_TIMESHEET_COLOR = '#78aaff'
-export const DEFAULT_DAILY_STARTING_HOUR = 9
-export const DEFAULT_DAILY_FINISHING_HOUR = 19
 
 const storedDatabaseName = readStoredDatabaseName()
 
@@ -111,54 +109,6 @@ export async function getDefaultTimesheetColor() {
 export async function setDefaultTimesheetColor(color: string) {
   await setSetting('default_timesheet_color', color)
   return color
-}
-
-export async function getDailyWorkingHours() {
-  const [startingHourValue, finishingHourValue] = await Promise.all([
-    getSetting('daily_starting_hour'),
-    getSetting('daily_finishing_hour'),
-  ])
-  const dailyStartingHour = parseDailyHourSetting(
-    startingHourValue,
-    DEFAULT_DAILY_STARTING_HOUR,
-  )
-  const parsedDailyFinishingHour = parseDailyHourSetting(
-    finishingHourValue,
-    DEFAULT_DAILY_FINISHING_HOUR,
-  )
-  const dailyFinishingHour = Math.max(dailyStartingHour, parsedDailyFinishingHour)
-
-  return { dailyStartingHour, dailyFinishingHour }
-}
-
-export async function setDailyWorkingHours(
-  dailyStartingHour: number,
-  dailyFinishingHour: number,
-) {
-  const normalizedStartingHour = normalizeDailyHour(
-    dailyStartingHour,
-    'Ora di inizio',
-  )
-  const normalizedFinishingHour = normalizeDailyHour(
-    dailyFinishingHour,
-    'Ora di fine',
-  )
-
-  if (normalizedFinishingHour < normalizedStartingHour) {
-    throw new Error(
-      'L\'ora di fine deve essere maggiore o uguale all\'ora di inizio.',
-    )
-  }
-
-  await Promise.all([
-    setSetting('daily_starting_hour', String(normalizedStartingHour)),
-    setSetting('daily_finishing_hour', String(normalizedFinishingHour)),
-  ])
-
-  return {
-    dailyStartingHour: normalizedStartingHour,
-    dailyFinishingHour: normalizedFinishingHour,
-  }
 }
 
 export async function listCustomers() {
@@ -585,16 +535,6 @@ async function ensureSettingsTable(db: Database) {
   }
 
   await ensureSetting(db, 'default_timesheet_color', DEFAULT_TIMESHEET_COLOR)
-  await ensureSetting(
-    db,
-    'daily_starting_hour',
-    String(DEFAULT_DAILY_STARTING_HOUR),
-  )
-  await ensureSetting(
-    db,
-    'daily_finishing_hour',
-    String(DEFAULT_DAILY_FINISHING_HOUR),
-  )
 }
 
 async function ensureSetting(db: Database, key: string, value: string) {
@@ -644,33 +584,6 @@ function isDuplicateColumnError(error: unknown) {
   }
 
   return false
-}
-
-function parseDailyHourSetting(value: string | null, fallback: number) {
-  if (value === null) {
-    return fallback
-  }
-
-  const normalized = value.trim()
-  if (!normalized) {
-    return fallback
-  }
-
-  const parsed = Number(normalized)
-
-  if (!Number.isInteger(parsed) || parsed < 0 || parsed > 23) {
-    return fallback
-  }
-
-  return parsed
-}
-
-function normalizeDailyHour(value: number, label: string) {
-  if (!Number.isInteger(value) || value < 0 || value > 23) {
-    throw new Error(`${label} non valida. Inserisci un numero tra 0 e 23.`)
-  }
-
-  return value
 }
 
 function readStoredDatabaseName() {

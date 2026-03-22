@@ -50,11 +50,8 @@ import MonthTrackerHeader from '@/components/month-tracker/MonthTrackerHeader.vu
 import TimesheetDrawer from '@/components/month-tracker/TimesheetDrawer.vue'
 import {
   activeDatabaseName,
-  DEFAULT_DAILY_FINISHING_HOUR,
-  DEFAULT_DAILY_STARTING_HOUR,
   DEFAULT_TIMESHEET_COLOR,
   getDefaultTimesheetColor,
-  getDailyWorkingHours,
   listTimesheetsBetween,
   type TimesheetEntry,
 } from '@/lib/database'
@@ -70,8 +67,8 @@ import {
 } from '@/lib/time'
 import { computed, ref, watch } from 'vue'
 
-const dailyStartingHour = ref(DEFAULT_DAILY_STARTING_HOUR)
-const dailyFinishingHour = ref(DEFAULT_DAILY_FINISHING_HOUR)
+const dailyStartingHour = 9
+const dailyFinishingHour = 19
 const cellHeight = '20px'
 const cellMinWidth = '72px'
 const dayHeaderWidth = '128px'
@@ -108,8 +105,8 @@ const monthLabel = computed(() => {
 
 const hours = computed(() =>
   Array.from(
-    { length: dailyFinishingHour.value - dailyStartingHour.value + 1 },
-    (_, index) => dailyStartingHour.value + index,
+    { length: dailyFinishingHour - dailyStartingHour + 1 },
+    (_, index) => dailyStartingHour + index,
   ),
 )
 
@@ -477,23 +474,6 @@ async function loadDefaultTimesheetColor() {
   }
 }
 
-async function loadDailyWorkingHours() {
-  if (!hasActiveDatabase.value) {
-    dailyStartingHour.value = DEFAULT_DAILY_STARTING_HOUR
-    dailyFinishingHour.value = DEFAULT_DAILY_FINISHING_HOUR
-    return
-  }
-
-  try {
-    const settings = await getDailyWorkingHours()
-    dailyStartingHour.value = settings.dailyStartingHour
-    dailyFinishingHour.value = settings.dailyFinishingHour
-  } catch {
-    dailyStartingHour.value = DEFAULT_DAILY_STARTING_HOUR
-    dailyFinishingHour.value = DEFAULT_DAILY_FINISHING_HOUR
-  }
-}
-
 function toErrorMessage(error: unknown) {
   if (error instanceof Error) {
     return error.message
@@ -505,6 +485,5 @@ function toErrorMessage(error: unknown) {
 watch([selectedMonth, activeDatabaseName], () => {
   loadTimesheets()
   loadDefaultTimesheetColor()
-  loadDailyWorkingHours()
 }, { immediate: true })
 </script>

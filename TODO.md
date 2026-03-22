@@ -1,1 +1,0 @@
-- quando si seleziona un database esistente, fare i dovuti controlli di struttura e ritornare con un ok / errore

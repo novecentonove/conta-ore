@@ -1,10 +1,10 @@
 export const ui = {
-  pageSection: 'space-y-12 min-h-0 py-6 flex-1 overflow-y-auto',
+  pageSection: 'space-y-12 min-h-0 flex-1 overflow-y-auto',
   pageKicker: 'text-xs font-medium uppercase tracking-[0.24em] text-white/45',
   pageTitle: 'mt-2 text-3xl font-semibold tracking-tight text-white',
   pageSubtitle: 'mt-3 text-sm leading-6 text-white/60',
   section: 'space-y-3',
-  sectionCard: 'space-y-3 max-w-2xl rounded',
+  sectionCard: 'space-y-3 p-6 border border-white/90 max-w-2xl rounded',
   bodyText: 'text-sm leading-6 text-white/60',
   helperText: 'text-xs leading-6 text-white/45',
   fieldLabel: 'text-xs font-semibold uppercase tracking-[0.2em] text-white/45',
