@@ -93,11 +93,14 @@
           </button>
         </template>
 
+      </div>
+
+      <div class="mt-6 w-full">
         <MonthTrackerGridFooter
           :hours="hours"
-          :row-header-style="rowHeaderStyle"
           :cell-style="cellStyle"
           :total-label="monthTotalLabel"
+          :project-totals="projectTotals"
         />
       </div>
     </div>
@@ -117,17 +120,19 @@
         </button>
       </div>
 
-      <div
-        v-for="day in days"
-        :key="`right-indicator-${day.iso}`"
-        class="flex items-center justify-center"
-        :style="rightRowStyle()"
-      >
-        <span
-          v-if="hasHiddenTrackedHours(day.iso)"
-          class="h-2 w-2 rounded-full bg-zinc-400/90"
-          title="Ore registrate oltre l'orario visibile"
-        />
+      <div class="mt-2">
+        <div
+          v-for="day in days"
+          :key="`right-indicator-${day.iso}`"
+          class="flex items-center justify-center"
+          :style="rightRowStyle()"
+        >
+          <span
+            v-if="hasHiddenTrackedHours(day.iso)"
+            class="h-2 w-2 rounded-full bg-zinc-400/90"
+            title="Ore registrate oltre l'orario visibile"
+          />
+        </div>
       </div>
     </div>
   </div>
@@ -169,6 +174,7 @@ const props = defineProps<{
   formatHour: (hour: number) => string
   getDayTotalLabel: (dayIso: string) => string
   monthTotalLabel: string
+  projectTotals: { id: number | null; name: string; color: string; totalLabel: string }[]
   getSlotSummary: (dayIso: string, hour: number) => string
   getSlotSegments: (dayIso: string, hour: number) => SlotSegment[]
   timesheetFillColor: string

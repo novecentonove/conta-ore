@@ -16,6 +16,7 @@ export const activeDatabaseName = ref<string | null>(storedDatabaseName)
 export type TimesheetEntry = {
   id: number
   project_id: number | null
+  project_name: string | null
   project_color: string | null
   time_from: string
   time_to: string | null
@@ -92,6 +93,7 @@ export async function listTimesheetsBetween(start: string, end: string) {
             timesheets.time_to,
             timesheets.note,
             timesheets.created_at,
+            projects.name AS project_name,
             projects.color AS project_color
      FROM timesheets
      LEFT JOIN projects ON projects.id = timesheets.project_id

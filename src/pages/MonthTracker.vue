@@ -21,6 +21,7 @@
         :format-hour="formatHour"
         :get-day-total-label="getDayTotalLabel"
         :month-total-label="monthTotalLabel"
+        :project-totals="projectTotals"
         :get-slot-summary="getSlotSummary"
         :get-slot-segments="getSlotSegments"
         :timesheet-fill-color="timesheetFillColor"
@@ -247,6 +248,71 @@ const monthTotalMinutes = computed(() => {
 })
 
 const monthTotalLabel = computed(() => formatDuration(monthTotalMinutes.value, { showZero: true }))
+
+const projectTotals = computed(() => {
+  const monthStart = new Date(
+    selectedMonth.value.getFullYear(),
+    selectedMonth.value.getMonth(),
+    1,
+  )
+  const monthEnd = new Date(
+    selectedMonth.value.getFullYear(),
+    selectedMonth.value.getMonth() + 1,
+    1,
+  )
+  const totals = new Map<string, { id: number | null; name: string; color: string; minutes: number }>()
+
+  for (const entry of timesheets.value) {
+    if (!entry.time_to) {
+      continue
+    }
+
+    const startDate = parseLocalDateTime(entry.time_from)
+    const endDate = parseLocalDateTime(entry.time_to)
+
+    if (!startDate || !endDate || endDate <= startDate) {
+      continue
+    }
+
+    const clampedStart = startDate < monthStart ? monthStart : startDate
+    const clampedEnd = endDate > monthEnd ? monthEnd : endDate
+
+    if (clampedEnd <= clampedStart) {
+      continue
+    }
+
+    const minutes = Math.round((clampedEnd.getTime() - clampedStart.getTime()) / 60000)
+    if (minutes <= 0) {
+      continue
+    }
+
+    const projectName = entry.project_name?.trim()
+    const name = projectName
+      ? projectName
+      : entry.project_id === null
+        ? 'Senza progetto'
+        : 'Progetto sconosciuto'
+    const key = entry.project_id !== null ? `id:${entry.project_id}` : 'none'
+
+    const current = totals.get(key) ?? {
+      id: entry.project_id,
+      name,
+      color: resolveTimesheetColor(entry),
+      minutes: 0,
+    }
+
+    current.minutes += minutes
+    totals.set(key, current)
+  }
+
+  return Array.from(totals.values())
+    .filter((item) => item.minutes > 0)
+    .map((item) => ({
+      ...item,
+      totalLabel: formatDuration(item.minutes, { showZero: true }),
+    }))
+    .sort((a, b) => a.name.localeCompare(b.name, 'it-IT', { sensitivity: 'base' }))
+})
 
 type SlotSegment = {
   startMinute: number
