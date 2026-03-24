@@ -57,8 +57,6 @@
 <script setup lang="ts">
 import { RouterLink } from 'vue-router'
 
-import CloseIcon from '@/icons/CloseIcon.vue'
-
 defineProps<{
   isOpen: boolean
 }>()

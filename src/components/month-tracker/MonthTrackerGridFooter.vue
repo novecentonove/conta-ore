@@ -19,11 +19,11 @@
         </div>
       </div>
 
-      <div class="flex items-center gap-2">
-        <span class="text-xs font-semibold uppercase text-white/45">
+      <div class="flex items-center gap-2 text-white">
+        <span class="text-xs font-semibold uppercase">
           Totale
         </span>
-        <span class="text-base font-semibold text-white/60 tabular-nums">
+        <span class="text-[12px] tabular-nums">
           {{ totalLabel }}
         </span>
       </div>
