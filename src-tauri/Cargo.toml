@@ -1,5 +1,5 @@
 [package]
-name = "conta-ore"
+name = "tracciatore"
 version = "0.1.0"
 description = "A Tauri App"
 authors = ["you"]

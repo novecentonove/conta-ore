@@ -26,6 +26,7 @@
         :get-slot-segments="getSlotSegments"
         :timesheet-fill-color="timesheetFillColor"
         :timesheet-border-color="timesheetBorderColor"
+        :month-label="monthLabel"
         @select-slot="openDrawer"
         @toggle-hour-range="handleToggleHourRange"
       />

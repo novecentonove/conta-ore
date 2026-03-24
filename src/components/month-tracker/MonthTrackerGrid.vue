@@ -101,6 +101,7 @@
           :cell-style="cellStyle"
           :total-label="monthTotalLabel"
           :project-totals="projectTotals"
+          :month-label="monthLabel"
         />
       </div>
     </div>
@@ -179,6 +180,7 @@ const props = defineProps<{
   getSlotSegments: (dayIso: string, hour: number) => SlotSegment[]
   timesheetFillColor: string
   timesheetBorderColor: string
+  monthLabel: string
 }>()
 
 const emit = defineEmits<{

@@ -5,7 +5,7 @@ import Database from '@tauri-apps/plugin-sql'
 
 import initialMigration from '@/migrations/001_init.sql?raw'
 
-const ACTIVE_DATABASE_KEY = 'conta-ore.active-database'
+const ACTIVE_DATABASE_KEY = 'tracciatore.active-database'
 const SQLITE_FILE_PATTERN = /^[A-Za-z0-9._-]+$/
 export const DEFAULT_TIMESHEET_COLOR = '#78aaff'
 

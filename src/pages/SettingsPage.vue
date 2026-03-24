@@ -103,7 +103,7 @@ import { ui } from '@/lib/ui-classes'
 
 const defaultBaseDir = '/home'
 const storageDir = ref(defaultBaseDir)
-const defaultDatabaseName = 'conta-ore.sqlite'
+const defaultDatabaseName = 'tracciatore.sqlite'
 const statusMessage = ref('')
 const errorMessage = ref('')
 const isBusy = ref(false)

@@ -3,12 +3,13 @@
 
 @custom-variant dark (&:is(.dark *));
 
-html{
-  @apply bg-[#18181F] text-white;
+@theme {
+  --color-dark-500: #18181F;
+  --color-dark-600: #111118;
 }
 
 body {
-  @apply m-0 h-screen overflow-hidden bg-[#18181F] text-white;
+  @apply m-0 h-screen overflow-hidden bg-dark-500 text-white;
 }
 
 #app {
