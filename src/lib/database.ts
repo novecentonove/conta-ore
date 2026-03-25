@@ -334,7 +334,7 @@ async function assertNoTimesheetOverlap(input: {
   excludeId?: number
 }) {
   const db = await getActiveDatabase()
-  const excludeId = input.excludeId ?? -1
+  const excludeId = normalizeTimesheetId(input.excludeId)
   const timeFrom = input.time_from
   const timeTo = input.time_to
 
@@ -342,17 +342,17 @@ async function assertNoTimesheetOverlap(input: {
     ? await db.select<{ id: number }[]>(
       `SELECT id
        FROM timesheets
-       WHERE id != $1
-         AND time_from < $2
-         AND (time_to IS NULL OR time_to > $3)
+       WHERE ($1 IS NULL OR id != $1)
+         AND datetime(time_from) < datetime($2)
+         AND (time_to IS NULL OR datetime(time_to) > datetime($3))
        LIMIT 1`,
       [excludeId, timeTo, timeFrom],
     )
     : await db.select<{ id: number }[]>(
       `SELECT id
        FROM timesheets
-       WHERE id != $1
-         AND (time_to IS NULL OR time_to > $2)
+       WHERE ($1 IS NULL OR id != $1)
+         AND (time_to IS NULL OR datetime(time_to) > datetime($2))
        LIMIT 1`,
       [excludeId, timeFrom],
     )
@@ -360,6 +360,19 @@ async function assertNoTimesheetOverlap(input: {
   if (conflicts.length > 0) {
     throw new Error('Questo orario si sovrappone a una traccia esistente.')
   }
+}
+
+function normalizeTimesheetId(value?: number) {
+  if (value === null || value === undefined) {
+    return null
+  }
+
+  const numeric = Number(value)
+  if (!Number.isFinite(numeric)) {
+    return null
+  }
+
+  return numeric
 }
 
 async function getSetting(key: string) {

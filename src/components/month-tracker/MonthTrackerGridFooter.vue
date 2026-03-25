@@ -1,6 +1,6 @@
 <template>
   <div class="w-full flex items-start justify-between gap-4">
-    <div class="w-full rounded-sm border border-white/10 bg-dark-600 px-3 py-3">
+    <div class="w-full rounded-sm border border-white/10 bg-dark-600 px-3 py-4">
       <div class="flex flex-wrap items-center gap-3">
         <div class="flex items-center gap-3 text-[11px] text-white/60">
           <div>
@@ -65,7 +65,6 @@
             id="tracker-comment"
             v-model="comment"
             rows="2"
-            :disabled="isComplete"
             class="h-full w-full resize-none rounded-lg border border-white/10 bg-[#1C1C26] px-2 py-1 text-xs text-white/80 outline-none ring-0 placeholder:text-white/30 focus:border-white/25 disabled:cursor-not-allowed disabled:opacity-60"
             placeholder="Commento"
           />
@@ -101,7 +100,7 @@
           </Button>
           <ConfirmDialog
             v-model:open="showResetConfirm"
-            title="Resettare il tracker?"
+            title="Resettare il tracciato?"
             description="Questa azione cancella orari e commento."
             confirm-label="Resetta"
             @confirm="handleResetConfirm"
@@ -155,9 +154,10 @@
 <script setup lang="ts">
 import { computed, nextTick, ref, watch } from 'vue'
 import { Play, Square, X } from 'lucide-vue-next'
-import { formatTime, parseTime } from '@/lib/time'
+import { formatLocalDateTime, formatTime, parseTime } from '@/lib/time'
 import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+import { activeDatabaseName, createTimesheet } from '@/lib/database'
 
 const props = defineProps<{
   hours: number[]
@@ -165,6 +165,11 @@ const props = defineProps<{
   totalLabel: string
   projectTotals: { id: number | null; name: string; color: string; totalLabel: string }[]
   monthLabel: string
+}>()
+
+const emit = defineEmits<{
+  (event: 'saved'): void
+  (event: 'error', message: string): void
 }>()
 
 const startedAt = ref<Date | null>(null)
@@ -179,13 +184,14 @@ const startInputRef = ref<HTMLInputElement | null>(null)
 const endInputRef = ref<HTMLInputElement | null>(null)
 const showResetConfirm = ref(false)
 
+const hasActiveDatabase = computed(() => Boolean(activeDatabaseName.value))
 const startLabel = computed(() => (startedAt.value ? formatTime(startedAt.value) : '--'))
 const endLabel = computed(() => (stoppedAt.value ? formatTime(stoppedAt.value) : '--'))
-const canSave = computed(() => Boolean(startedAt.value && stoppedAt.value))
+const canSave = computed(() => Boolean(startedAt.value && stoppedAt.value && hasActiveDatabase.value))
 const isComplete = computed(() => Boolean(startedAt.value && stoppedAt.value))
 const canReset = computed(() => Boolean(isTracking.value || startedAt.value || stoppedAt.value || comment.value))
-const canEditStart = computed(() => Boolean(startedAt.value) && !isComplete.value)
-const canEditEnd = computed(() => Boolean(startedAt.value) && !isComplete.value)
+const canEditStart = computed(() => Boolean(startedAt.value))
+const canEditEnd = computed(() => Boolean(startedAt.value))
 
 function handleStart() {
   if (isComplete.value) {
@@ -219,12 +225,23 @@ function resetTracker() {
   showResetConfirm.value = false
 }
 
-function handleSave() {
-  if (!canSave.value) {
+async function handleSave() {
+  if (!canSave.value || !startedAt.value || !stoppedAt.value) {
     return
   }
 
-  resetTracker()
+  try {
+    const note = comment.value.trim()
+    await createTimesheet({
+      time_from: formatLocalDateTime(startedAt.value),
+      time_to: formatLocalDateTime(stoppedAt.value),
+      note: note ? note : null,
+    })
+    emit('saved')
+    resetTracker()
+  } catch (error) {
+    emit('error', toErrorMessage(error))
+  }
 }
 
 function handleResetConfirm() {
@@ -301,4 +318,12 @@ watch(
     resetTracker()
   },
 )
+
+function toErrorMessage(error: unknown) {
+  if (error instanceof Error) {
+    return error.message
+  }
+
+  return 'Si e\' verificato un errore inatteso.'
+}
 </script>

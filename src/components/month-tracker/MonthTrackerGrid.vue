@@ -30,8 +30,9 @@
               <div class="px-3 flex items-center space-x-2">
                 <span
                   :class="[
-                    'text-right w-6 text-sm font-semibold text-white tabular-nums',
-                    isWeekend(day.iso) ? 'opacity-50' : '',
+                    'text-right w-6 pr-0.5 text-sm font-semibold text-white tabular-nums',
+                    isToday(day.iso) ? 'border border-white' : '',
+                    isWeekend(day.iso) ? 'opacity-30' : '',
                   ]"
                 >
                   {{ day.dayNumber }}
@@ -40,7 +41,7 @@
                 <span
                   :class="[
                     'w-10 text-left text-xs font-semibold uppercase text-white/45',
-                    isWeekend(day.iso) ? 'opacity-50' : '',
+                    isWeekend(day.iso) ? 'opacity-30' : '',
                   ]"
                 >
                   {{ day.weekdayLabel }}
@@ -61,7 +62,7 @@
             :class="[
               'relative bg-[#20202A] px-3 py-1 text-left transition focus:outline-none focus:ring-2 focus:ring-white/20',
               hasSegments(day.iso, hour) ? 'hover:bg-[#20202A]' : 'hover:bg-[#2A2A38]',
-              isWeekend(day.iso) ? 'opacity-50' : '',
+              isWeekend(day.iso) ? 'opacity-30' : '',
             ]"
             :style="cellStyle"
             @click="handleCellClick($event, day, hour)"
@@ -102,6 +103,8 @@
           :total-label="monthTotalLabel"
           :project-totals="projectTotals"
           :month-label="monthLabel"
+          @saved="handleTrackerSaved"
+          @error="handleTrackerError"
         />
       </div>
     </div>
@@ -140,7 +143,7 @@
 </template>
 
 <script setup lang="ts">
-import type { CalendarDay } from '@/lib/time'
+import { toIsoDate, type CalendarDay } from '@/lib/time'
 import { ref, type CSSProperties } from 'vue'
 import { ChevronLeft, ChevronRight } from 'lucide-vue-next'
 import MonthTrackerGridFooter from './MonthTrackerGridFooter.vue'
@@ -195,6 +198,8 @@ const emit = defineEmits<{
     },
   ): void
   (event: 'toggle-hour-range', nextValue: boolean): void
+  (event: 'tracker-saved'): void
+  (event: 'tracker-error', message: string): void
 }>()
 
 const hoveredRange = ref<{
@@ -433,5 +438,17 @@ function isWeekend(dayIso: string) {
   const date = new Date(`${dayIso}T00:00:00`)
   const dayOfWeek = date.getDay()
   return dayOfWeek === 0 || dayOfWeek === 6
+}
+
+function isToday(dayIso: string) {
+  return dayIso === toIsoDate(new Date())
+}
+
+function handleTrackerSaved() {
+  emit('tracker-saved')
+}
+
+function handleTrackerError(message: string) {
+  emit('tracker-error', message)
 }
 </script>

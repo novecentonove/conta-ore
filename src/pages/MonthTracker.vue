@@ -29,6 +29,8 @@
         :month-label="monthLabel"
         @select-slot="openDrawer"
         @toggle-hour-range="handleToggleHourRange"
+        @tracker-saved="loadTimesheets"
+        @tracker-error="handleTrackerError"
       />
 
       <p v-if="isLoadingTimesheets" class="text-xs text-white/45">
@@ -563,6 +565,10 @@ function toErrorMessage(error: unknown) {
   }
 
   return 'Si e\' verificato un errore inatteso.'
+}
+
+function handleTrackerError(message: string) {
+  loadError.value = message
 }
 
 watch([selectedMonth, activeDatabaseName], () => {
