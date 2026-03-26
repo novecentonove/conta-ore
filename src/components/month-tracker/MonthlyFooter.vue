@@ -1,6 +1,8 @@
 <template>
   <div class="w-full flex items-start justify-between gap-4">
-    <div class="w-full rounded-sm border border-white/10 bg-dark-600 px-3 py-4">
+
+    <!-- tracciatore -->
+    <div class="flex-1 max-w-2xl rounded-sm border border-white/10 bg-dark-600 px-3 py-4">
       <div class="flex flex-wrap items-center gap-3">
         <div class="flex items-center gap-3 text-[11px] text-white/60">
           <div>
@@ -57,7 +59,7 @@
           </div>
         </div>
 
-        <div class="flex-1 min-w-45 h-9.25">
+        <div class="flex-1 min-w-12 max-w-52 h-9.25">
           <label class="sr-only" for="tracker-comment">
             Commento
           </label>
@@ -68,6 +70,34 @@
             class="h-full w-full resize-none rounded-lg border border-white/10 bg-[#1C1C26] px-2 py-1 text-xs text-white/80 outline-none ring-0 placeholder:text-white/30 focus:border-white/25 disabled:cursor-not-allowed disabled:opacity-60"
             placeholder="Commento"
           />
+        </div>
+
+        <div class="min-w-48 h-9.25">
+          <label class="sr-only" for="tracker-project">
+            Progetto
+          </label>
+          <NativeSelect
+            id="tracker-project"
+            v-model="selectedProjectId"
+            class="h-full min-w-48 rounded-lg border border-white/10 bg-[#1C1C26] px-2 text-xs text-white/80 outline-none ring-0 focus:border-white/25 disabled:cursor-not-allowed disabled:opacity-60"
+            :disabled="!hasActiveDatabase || isLoadingProjects"
+          >
+            <option value="">
+              Nessun progetto
+            </option>
+            <option
+              v-for="project in projects"
+              :key="project.id"
+              :value="String(project.id)"
+              :title="project.customer_name"
+            >
+              {{ project.name }} 
+            </option>
+          </NativeSelect>
+        </div>
+
+        <div class="h-10 border-r border-white/10">
+
         </div>
 
         <div class="flex items-center gap-2">
@@ -120,7 +150,8 @@
       </div>
     </div>
 
-    <div class="w-full max-w-sm px-3 flex flex-col items-end gap-2 text-right">
+    <!-- Totali -->
+    <div class="w-72 px-3 flex flex-col items-end gap-2 text-right">
       <div v-if="projectTotals.length > 0" class="flex flex-col items-end gap-1">
         <div
           v-for="project in projectTotals"
@@ -156,8 +187,14 @@ import { computed, nextTick, ref, watch } from 'vue'
 import { Play, Square, X } from 'lucide-vue-next'
 import { formatLocalDateTime, formatTime, parseTime } from '@/lib/time'
 import { Button } from '@/components/ui/button'
+import { NativeSelect } from '@/components/ui/native-select'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
-import { activeDatabaseName, createTimesheet } from '@/lib/database'
+import {
+  activeDatabaseName,
+  createTimesheet,
+  listProjects,
+  type ProjectWithCustomer,
+} from '@/lib/database'
 
 const props = defineProps<{
   hours: number[]
@@ -183,13 +220,23 @@ const endInput = ref('')
 const startInputRef = ref<HTMLInputElement | null>(null)
 const endInputRef = ref<HTMLInputElement | null>(null)
 const showResetConfirm = ref(false)
+const selectedProjectId = ref('')
+const projects = ref<ProjectWithCustomer[]>([])
+const isLoadingProjects = ref(false)
+const projectsError = ref('')
 
 const hasActiveDatabase = computed(() => Boolean(activeDatabaseName.value))
 const startLabel = computed(() => (startedAt.value ? formatTime(startedAt.value) : '--'))
 const endLabel = computed(() => (stoppedAt.value ? formatTime(stoppedAt.value) : '--'))
 const canSave = computed(() => Boolean(startedAt.value && stoppedAt.value && hasActiveDatabase.value))
 const isComplete = computed(() => Boolean(startedAt.value && stoppedAt.value))
-const canReset = computed(() => Boolean(isTracking.value || startedAt.value || stoppedAt.value || comment.value))
+const canReset = computed(() => Boolean(
+  isTracking.value
+  || startedAt.value
+  || stoppedAt.value
+  || comment.value
+  || selectedProjectId.value,
+))
 const canEditStart = computed(() => Boolean(startedAt.value))
 const canEditEnd = computed(() => Boolean(startedAt.value))
 
@@ -221,6 +268,7 @@ function resetTracker() {
   startedAt.value = null
   stoppedAt.value = null
   comment.value = ''
+  selectedProjectId.value = ''
   isTracking.value = false
   showResetConfirm.value = false
 }
@@ -232,10 +280,12 @@ async function handleSave() {
 
   try {
     const note = comment.value.trim()
+    const projectId = parseProjectId()
     await createTimesheet({
       time_from: formatLocalDateTime(startedAt.value),
       time_to: formatLocalDateTime(stoppedAt.value),
       note: note ? note : null,
+      project_id: projectId,
     })
     emit('saved')
     resetTracker()
@@ -312,11 +362,53 @@ function cancelEndEdit() {
   isEditingEnd.value = false
 }
 
+async function loadProjects() {
+  if (!hasActiveDatabase.value) {
+    projects.value = []
+    projectsError.value = ''
+    selectedProjectId.value = ''
+    return
+  }
+
+  isLoadingProjects.value = true
+  projectsError.value = ''
+
+  try {
+    projects.value = await listProjects()
+  } catch (error) {
+    projectsError.value = toErrorMessage(error)
+    emit('error', projectsError.value)
+  } finally {
+    isLoadingProjects.value = false
+  }
+}
+
+function parseProjectId() {
+  if (!selectedProjectId.value) {
+    return null
+  }
+
+  const value = Number.parseInt(selectedProjectId.value, 10)
+  if (!Number.isFinite(value) || value <= 0) {
+    throw new Error('Seleziona un progetto valido.')
+  }
+
+  return value
+}
+
 watch(
   () => props.monthLabel,
   () => {
     resetTracker()
   },
+)
+
+watch(
+  () => activeDatabaseName.value,
+  () => {
+    loadProjects()
+  },
+  { immediate: true },
 )
 
 function toErrorMessage(error: unknown) {

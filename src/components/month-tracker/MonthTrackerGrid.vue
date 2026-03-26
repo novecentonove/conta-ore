@@ -2,7 +2,7 @@
   <div class="flex min-h-0 flex-1 min-w-0">
     <div
       class="min-h-0 min-w-0 flex-1"
-      :class="props.isExtendedHourRange ? 'overflow-x-auto overflow-y-auto' : 'overflow-hidden'"
+      :class="props.isExtendedHourRange ? 'overflow-x-auto overflow-y-auto pr-8 pb-8' : 'overflow-hidden'"
     >
       <div
         class="grid w-full min-w-max gap-px rounded"
@@ -60,8 +60,11 @@
             :key="`${day.iso}-${hour}`"
             type="button"
             :class="[
-              'relative bg-[#20202A] px-3 py-1 text-left transition focus:outline-none focus:ring-2 focus:ring-white/20',
-              hasSegments(day.iso, hour) ? 'hover:bg-[#20202A]' : 'hover:bg-[#2A2A38]',
+              'relative px-3 py-1 text-left transition focus:outline-none focus:ring-2 focus:ring-white/20',
+              isToday(day.iso) ? 'bg-[#252533]' : 'bg-[#20202A]',
+              hasSegments(day.iso, hour)
+                ? (isToday(day.iso) ? 'hover:bg-[#252533]' : 'hover:bg-[#20202A]')
+                : (isToday(day.iso) ? 'hover:bg-[#2C2C3C]' : 'hover:bg-[#2A2A38]'),
               isWeekend(day.iso) ? 'opacity-30' : '',
             ]"
             :style="cellStyle"
@@ -97,7 +100,7 @@
       </div>
 
       <div class="mt-6 w-full">
-        <MonthTrackerGridFooter
+        <MonthlyFooter
           :hours="hours"
           :cell-style="cellStyle"
           :total-label="monthTotalLabel"
@@ -146,7 +149,7 @@
 import { toIsoDate, type CalendarDay } from '@/lib/time'
 import { ref, type CSSProperties } from 'vue'
 import { ChevronLeft, ChevronRight } from 'lucide-vue-next'
-import MonthTrackerGridFooter from './MonthTrackerGridFooter.vue'
+import MonthlyFooter from './MonthlyFooter.vue'
 
 type SlotSegment = {
   startMinute: number
