@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 
 import MonthTracker from '@/pages/MonthTracker.vue'
+import MonthSimple from '@/pages/MonthSimple.vue'
 import ClientsPage from '@/pages/ClientsPage.vue'
 import ProjectsPage from '@/pages/ProjectsPage.vue'
 import SettingsPage from '@/pages/SettingsPage.vue'
@@ -12,6 +13,11 @@ const router = createRouter({
       path: '/',
       name: 'month-tracker',
       component: MonthTracker,
+    },
+    {
+      path: '/month-simple',
+      name: 'month-simple',
+      component: MonthSimple,
     },
     {
       path: '/settings',

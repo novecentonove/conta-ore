@@ -1,5 +1,5 @@
 <template>
-  <div class="w-full flex items-start justify-between gap-4">
+  <div class="w-full flex items-start justify-between gap-4 bg-[#15151b] p-4">
 
     <!-- tracciatore -->
     <div class="flex-1 max-w-2xl rounded-sm border border-white/10 bg-dark-600 px-3 py-4">
